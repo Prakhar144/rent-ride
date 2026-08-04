@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Browse Vehicles — RideIndia</title>
+<meta name="description" content="Browse all available cars, bikes, and scooters for rent across India. Filter by city, type, and price." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="assets/style.css" />
+<style>
+  .vehicles-layout { display: grid; grid-template-columns: 280px 1fr; gap: 32px; padding: 40px 6%; align-items: start; max-width: 1300px; margin: 0 auto; }
+  .sidebar { background: #fff; border-radius: 16px; border: 1px solid #e5e7eb; padding: 24px; position: sticky; top: 88px; }
+  .sidebar h3 { font-size: 1rem; font-weight: 800; margin-bottom: 20px; color: #14213d; }
+  .filter-group { margin-bottom: 24px; }
+  .filter-group-title { font-size: 0.78rem; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .filter-chip { display: flex; align-items: center; gap: 8px; padding: 8px 0; cursor: pointer; }
+  .filter-chip input[type=checkbox], .filter-chip input[type=radio] { accent-color: #ff6a3d; width: 16px; height: 16px; cursor: pointer; }
+  .filter-chip label { font-size: 0.9rem; font-weight: 500; cursor: pointer; }
+  .price-range { width: 100%; accent-color: #ff6a3d; }
+  .price-display { display: flex; justify-content: space-between; font-size: 0.83rem; color: #6b7280; margin-top: 8px; }
+  .filter-divider { border: none; border-top: 1px solid #f1f3f5; margin: 8px 0 20px; }
+  .results-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+  .results-count { font-size: 0.9rem; color: #6b7280; font-weight: 500; }
+  .sort-select { padding: 8px 14px; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: 0.88rem; font-family:'Inter',sans-serif; color:#14213d; background:#fff; cursor:pointer; }
+  @media(max-width:900px) { .vehicles-layout{grid-template-columns:1fr;} .sidebar{position:static;} }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo"><a href="index.html">Ride<span>India</span> 🚗</a></div>
+  <nav class="site-nav" id="siteNav">
+    <a href="index.html">Home</a>
+    <a href="vehicles.html" class="active">Vehicles</a>
+    <a href="index.html#map-section">Locations</a>
+    <a href="index.html#how">How It Works</a>
+    <a href="login.html" class="nav-btn" id="navAuthBtn">Sign In</a>
+  </nav>
+  <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+</header>
+
+<section class="page-hero">
+  <h1>Browse All Vehicles</h1>
+  <p>Cars, bikes, and scooters available across 10+ Indian cities</p>
+</section>
+
+<div class="vehicles-layout">
+  <!-- Sidebar Filters -->
+  <aside class="sidebar">
+    <h3>🎛️ Filters</h3>
+
+    <div class="filter-group">
+      <div class="filter-group-title">City</div>
+      <select class="form-select" id="cityFilter" onchange="applyFilters()">
+        <option value="">All Cities</option>
+      </select>
+    </div>
+    <hr class="filter-divider">
+
+    <div class="filter-group">
+      <div class="filter-group-title">Vehicle Type</div>
+      <div class="filter-chip"><input type="radio" name="type" id="typeAll" value="" checked onchange="applyFilters()"><label for="typeAll">All Types</label></div>
+      <div class="filter-chip"><input type="radio" name="type" id="typeCar"     value="Car"     onchange="applyFilters()"><label for="typeCar">🚗 Car</label></div>
+      <div class="filter-chip"><input type="radio" name="type" id="typeBike"    value="Bike"    onchange="applyFilters()"><label for="typeBike">🏍️ Bike</label></div>
+      <div class="filter-chip"><input type="radio" name="type" id="typeScooter" value="Scooter" onchange="applyFilters()"><label for="typeScooter">🛵 Scooter</label></div>
+    </div>
+    <hr class="filter-divider">
+
+    <div class="filter-group">
+      <div class="filter-group-title">Max Price / Day</div>
+      <input type="range" class="price-range" id="priceRange" min="300" max="4000" value="4000" step="100" oninput="updatePriceLabel();applyFilters()" />
+      <div class="price-display"><span>₹300</span><span id="priceLabel">₹4,000</span></div>
+    </div>
+    <hr class="filter-divider">
+
+    <div class="filter-group">
+      <div class="filter-group-title">Fuel Type</div>
+      <div class="filter-chip"><input type="checkbox" id="fuelPetrol" value="Petrol" onchange="applyFilters()"><label for="fuelPetrol">⛽ Petrol</label></div>
+      <div class="filter-chip"><input type="checkbox" id="fuelDiesel" value="Diesel" onchange="applyFilters()"><label for="fuelDiesel">🛢️ Diesel</label></div>
+      <div class="filter-chip"><input type="checkbox" id="fuelElectric" value="Electric" onchange="applyFilters()"><label for="fuelElectric">⚡ Electric</label></div>
+      <div class="filter-chip"><input type="checkbox" id="fuelCNG" value="CNG" onchange="applyFilters()"><label for="fuelCNG">🌿 CNG</label></div>
+    </div>
+    <hr class="filter-divider">
+
+    <button class="btn btn-outline btn-full" onclick="resetFilters()">Reset Filters</button>
+  </aside>
+
+  <!-- Main Content -->
+  <main>
+    <div class="results-bar">
+      <span class="results-count" id="resultsCount">Loading…</span>
+      <select class="sort-select" id="sortSelect" onchange="applyFilters()">
+        <option value="name">Sort by Name</option>
+        <option value="price_asc">Price: Low to High</option>
+        <option value="price_desc">Price: High to Low</option>
+      </select>
+    </div>
+    <div class="vehicle-grid" id="vehicleGrid">
+      <div class="loading-center" style="grid-column:1/-1"><div class="spinner"></div></div>
+    </div>
+    <div style="text-align:center;margin-top:32px;" id="paginationWrap"></div>
+  </main>
+</div>
+
+<!-- Booking Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h3 id="modalTitle" style="font-size:1.15rem;font-weight:800;margin-bottom:4px;"></h3>
+    <p id="modalSubtitle" style="color:#6b7280;font-size:0.85rem;margin-bottom:16px;"></p>
+    <div id="bookingForm">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group"><label class="form-label">Pickup Date</label><input type="date" class="form-input" id="modalStartDate" /></div>
+        <div class="form-group"><label class="form-label">Return Date</label><input type="date" class="form-input" id="modalEndDate" /></div>
+      </div>
+      <div style="background:#f7f8fa;border-radius:10px;padding:14px 16px;margin:10px 0;" id="costSummary" style="display:none;">
+        <div style="display:flex;justify-content:space-between;font-size:0.88rem;margin-bottom:6px;"><span id="daysLabel">Days</span><span id="daysVal">—</span></div>
+        <div style="display:flex;justify-content:space-between;font-weight:800;font-size:1rem;border-top:1px solid #e5e7eb;padding-top:10px;margin-top:6px;"><span>Total</span><span id="totalVal" style="color:#ff6a3d;">—</span></div>
+      </div>
+      <div id="bookingError" class="alert alert-error" style="display:none;"></div>
+      <button class="btn btn-primary btn-full" style="margin-top:8px;" onclick="confirmBooking()" id="confirmBtn">Confirm Booking</button>
+      <p style="font-size:0.78rem;color:#6b7280;text-align:center;margin-top:10px;">Need an account? <a href="login.html" style="color:#ff6a3d;font-weight:600;">Sign in / Register</a></p>
+    </div>
+    <div id="successMsg" style="display:none;text-align:center;padding:20px 0;">
+      <div style="font-size:3rem;margin-bottom:12px;">✅</div>
+      <h3 style="color:#16a34a;margin-bottom:8px;">Booking Confirmed!</h3>
+      <p style="color:#6b7280;font-size:0.9rem;"><a href="profile.html" style="color:#ff6a3d;font-weight:600;">View in your profile →</a></p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer" style="margin-top:40px;">
+  <div class="footer-bottom"><p><strong>RideIndia</strong> — © 2026 All rights reserved. <a href="index.html" style="color:#94a3b8;margin-left:16px;">Home</a></p></div>
+</footer>
+
+<div id="toast-container"></div>
+
+<script>
+  const API = '';
+  const PAGE_SIZE = 12;
+  let allVehicles = [], filtered = [], currentPage = 1, bookingVehicle = null;
+
+  const fmt = d => d.toISOString().split('T')[0];
+  const today = new Date(); const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
+
+  async function init() {
+    // ── Read URL params from hero search ──────────────────────────────────────
+    const params = new URLSearchParams(window.location.search);
+    const urlCity  = params.get('city')  || '';
+    const urlDrop  = params.get('drop')  || '';
+    const urlStart = params.get('start') || '';
+    const urlEnd   = params.get('end')   || '';
+    const urlType  = params.get('type')  || '';
+
+    // Show route banner if pickup+drop provided
+    if (urlCity || urlDrop) {
+      const banner = document.createElement('div');
+      banner.id = 'routeBanner';
+      banner.style.cssText = 'background:linear-gradient(90deg,#14213d,#1f3a63);color:#fff;padding:12px 6%;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:0.9rem;font-weight:500;';
+      banner.innerHTML = `
+        <span style="display:flex;align-items:center;gap:6px;">
+          <span style="width:10px;height:10px;border-radius:50%;background:#16a34a;display:inline-block;"></span>
+          <strong>${urlCity || 'Any city'}</strong>
+        </span>
+        <span style="color:#64748b;font-size:1.2rem;">→</span>
+        <span style="display:flex;align-items:center;gap:6px;">
+          <span style="width:10px;height:10px;border-radius:50%;background:#dc2626;display:inline-block;"></span>
+          <strong>${urlDrop || 'Any city'}</strong>
+        </span>
+        ${urlStart ? `<span style="margin-left:16px;color:#94a3b8;">📅 ${urlStart}${urlEnd?' → '+urlEnd:''}</span>` : ''}
+        <span style="margin-left:auto;"><a href="index.html" style="color:#ff6a3d;font-weight:600;font-size:0.82rem;">✕ Clear search</a></span>
+      `;
+      document.querySelector('.page-hero').after(banner);
+    }
+
+    try {
+      const res = await fetch(`${API}/api/vehicles`);
+      const data = await res.json();
+      allVehicles = data.vehicles || [];
+    } catch { allVehicles = []; }
+
+    // Populate city select
+    const cities = [...new Set(allVehicles.map(v=>v.city))].sort();
+    const sel = document.getElementById('cityFilter');
+    cities.forEach(c => { const o=document.createElement('option'); o.value=c; o.textContent=c; sel.appendChild(o); });
+
+    // ── Apply URL params ───────────────────────────────────────────────────────
+    if (urlCity) {
+      sel.value = urlCity;
+    }
+    if (urlType) {
+      const radio = document.querySelector(`input[name=type][value="${urlType}"]`);
+      if (radio) radio.checked = true;
+    }
+    if (urlStart) document.getElementById('startDate') && null; // handled in booking pages
+    if (urlEnd)   document.getElementById('endDate')   && null;
+
+    applyFilters();
+    checkAuth();
+  }
+
+
+  function updatePriceLabel() {
+    const v = document.getElementById('priceRange').value;
+    document.getElementById('priceLabel').textContent = `₹${Number(v).toLocaleString('en-IN')}`;
+  }
+
+  function applyFilters() {
+    const city    = document.getElementById('cityFilter').value;
+    const type    = document.querySelector('input[name=type]:checked')?.value || '';
+    const maxP    = Number(document.getElementById('priceRange').value);
+    const sort    = document.getElementById('sortSelect').value;
+    const fuels   = ['Petrol','Diesel','Electric','CNG'].filter(f => document.getElementById('fuel'+f)?.checked);
+
+    filtered = allVehicles.filter(v => {
+      if (city && v.city !== city) return false;
+      if (type && v.type !== type) return false;
+      if (v.price_day > maxP) return false;
+      if (fuels.length && !fuels.includes(v.fuel)) return false;
+      return true;
+    });
+
+    if (sort === 'price_asc')  filtered.sort((a,b) => a.price_day - b.price_day);
+    if (sort === 'price_desc') filtered.sort((a,b) => b.price_day - a.price_day);
+    if (sort === 'name')       filtered.sort((a,b) => a.name.localeCompare(b.name));
+
+    currentPage = 1;
+    renderPage();
+  }
+
+  function renderPage() {
+    const grid = document.getElementById('vehicleGrid');
+    document.getElementById('resultsCount').textContent = `${filtered.length} vehicle${filtered.length!==1?'s':''} found`;
+    const start = (currentPage-1)*PAGE_SIZE;
+    const page  = filtered.slice(start, start+PAGE_SIZE);
+
+    if (page.length === 0) {
+      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🔍</div><h3>No vehicles found</h3><p>Try adjusting your filters.</p></div>';
+    } else {
+      grid.innerHTML = page.map(v => `
+        <div class="vehicle-card">
+          <div class="vehicle-thumb">${v.icon}<div class="vehicle-type-badge">${v.type}</div></div>
+          <div class="vehicle-info">
+            <h3>${v.name}</h3>
+            <div class="vehicle-meta"><span>📍 ${v.city}</span><span>⛽ ${v.fuel||'Petrol'}</span></div>
+            <div class="vehicle-specs">
+              ${v.seats?`<span class="spec-tag">👥 ${v.seats} seats</span>`:''}
+              <span class="spec-tag">⚙️ ${v.transmission||'Manual'}</span>
+            </div>
+            <p style="font-size:0.82rem;color:#6b7280;margin:8px 0;line-height:1.5;">${v.description||''}</p>
+            <div class="vehicle-price">₹${Number(v.price_day).toLocaleString('en-IN')} <small>/ day</small></div>
+            <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px;">
+              <button class="btn btn-dark btn-full" onclick='openModal(${JSON.stringify(v)})'>Book Now</button>
+              <a href="booking.html?id=${v.id}" class="btn btn-outline" title="View Details">🔍</a>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Pagination
+    const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+    const pw = document.getElementById('paginationWrap');
+    if (totalPages <= 1) { pw.innerHTML=''; return; }
+    pw.innerHTML = Array.from({length:totalPages},(_,i) => `
+      <button onclick="goPage(${i+1})" style="margin:4px;padding:8px 16px;border-radius:8px;border:1.5px solid ${i+1===currentPage?'#ff6a3d':'#e5e7eb'};background:${i+1===currentPage?'#ff6a3d':'#fff'};color:${i+1===currentPage?'#fff':'#14213d'};font-weight:600;cursor:pointer;">${i+1}</button>
+    `).join('');
+  }
+
+  function goPage(p) { currentPage=p; renderPage(); window.scrollTo({top:200,behavior:'smooth'}); }
+
+  function resetFilters() {
+    document.getElementById('cityFilter').value = '';
+    document.querySelectorAll('input[name=type]')[0].checked = true;
+    document.getElementById('priceRange').value = 4000; updatePriceLabel();
+    ['Petrol','Diesel','Electric','CNG'].forEach(f => { const el=document.getElementById('fuel'+f); if(el) el.checked=false; });
+    applyFilters();
+  }
+
+  // Booking Modal
+  function openModal(vehicle) {
+    bookingVehicle = vehicle;
+    document.getElementById('modalTitle').textContent = vehicle.name;
+    document.getElementById('modalSubtitle').textContent = `${vehicle.city} · ₹${vehicle.price_day}/day`;
+    document.getElementById('bookingForm').style.display='block';
+    document.getElementById('successMsg').style.display='none';
+    document.getElementById('bookingError').style.display='none';
+    document.getElementById('modalStartDate').value = fmt(today);
+    document.getElementById('modalEndDate').value = fmt(tomorrow);
+    updateCost();
+    document.getElementById('modalOverlay').classList.add('active');
+  }
+  function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); }
+  function updateCost() {
+    const s=new Date(document.getElementById('modalStartDate').value);
+    const e=new Date(document.getElementById('modalEndDate').value);
+    if(!bookingVehicle||isNaN(s)||isNaN(e)||e<=s){document.getElementById('costSummary').style.display='none';return;}
+    const days=Math.ceil((e-s)/(1000*60*60*24));
+    document.getElementById('daysLabel').textContent=`${days} day${days>1?'s':''}`;
+    document.getElementById('daysVal').textContent=`× ₹${bookingVehicle.price_day}`;
+    document.getElementById('totalVal').textContent=`₹${(days*bookingVehicle.price_day).toLocaleString('en-IN')}`;
+    document.getElementById('costSummary').style.display='block';
+  }
+  document.getElementById('modalStartDate').addEventListener('change',updateCost);
+  document.getElementById('modalEndDate').addEventListener('change',updateCost);
+  document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+
+  async function confirmBooking() {
+    const start=document.getElementById('modalStartDate').value;
+    const end=document.getElementById('modalEndDate').value;
+    const errEl=document.getElementById('bookingError');
+    if(!start||!end){errEl.textContent='Please select both dates.';errEl.style.display='block';return;}
+    errEl.style.display='none';
+    const btn=document.getElementById('confirmBtn');
+    btn.textContent='Booking…';btn.disabled=true;
+    try {
+      const res=await fetch(`${API}/api/bookings`,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({vehicle_id:bookingVehicle.id,start_date:start,end_date:end})});
+      const data=await res.json();
+      if(!res.ok){
+        errEl.innerHTML=res.status===401?'Please <a href="login.html" style="color:#ff6a3d;font-weight:600;">sign in</a> first.':(data.error||'Booking failed.');
+        errEl.style.display='block';btn.textContent='Confirm Booking';btn.disabled=false;return;
+      }
+      document.getElementById('bookingForm').style.display='none';
+      document.getElementById('successMsg').style.display='block';
+    } catch {errEl.textContent='Network error.';errEl.style.display='block';btn.textContent='Confirm Booking';btn.disabled=false;}
+  }
+
+  async function checkAuth() {
+    try {
+      const res=await fetch(`${API}/api/auth/me`,{credentials:'include'});
+      if(res.ok){const{user}=await res.json();const btn=document.getElementById('navAuthBtn');btn.textContent=user.name.split(' ')[0];btn.href=user.role==='admin'?'admin.html':'profile.html';}
+    } catch {}
+  }
+
+  document.getElementById('hamburger').addEventListener('click',()=>document.getElementById('siteNav').classList.toggle('open'));
+
+  init();
+</script>
+</body>
+</html>

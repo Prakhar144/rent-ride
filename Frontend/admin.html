@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin Panel — RideIndia</title>
+<meta name="description" content="RideIndia admin dashboard for managing vehicles, bookings and users." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="assets/style.css" />
+<style>
+  .admin-layout { display: grid; grid-template-columns: 240px 1fr; min-height: calc(100vh - 68px); }
+  .admin-sidebar { background: #14213d; color: #fff; padding: 28px 0; position: sticky; top: 68px; height: calc(100vh - 68px); overflow-y: auto; }
+  .admin-sidebar .admin-logo { padding: 0 22px 24px; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748b; border-bottom: 1px solid rgba(255,255,255,0.07); margin-bottom: 12px; }
+  .admin-nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 22px; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: #94a3b8; transition: all .2s; border-left: 3px solid transparent; }
+  .admin-nav-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
+  .admin-nav-item.active { background: rgba(255,106,61,0.15); color: #ff6a3d; border-left-color: #ff6a3d; }
+  .admin-nav-item .nav-icon { font-size: 1.1rem; min-width: 20px; }
+  .admin-main { background: #f7f8fa; padding: 32px 36px; overflow-y: auto; }
+  .admin-page { display: none; }
+  .admin-page.active { display: block; }
+  .page-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 6px; }
+  .page-sub { color: #6b7280; font-size: 0.9rem; margin-bottom: 28px; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 18px; margin-bottom: 32px; }
+  .stat-card { background: #fff; border-radius: 14px; padding: 22px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-top: 3px solid var(--primary); }
+  .stat-card.green  { border-top-color: #16a34a; }
+  .stat-card.blue   { border-top-color: #2563eb; }
+  .stat-card.purple { border-top-color: #7c3aed; }
+  .stat-card.yellow { border-top-color: #d97706; }
+  .stat-card .icon  { font-size: 1.8rem; margin-bottom: 10px; }
+  .stat-card .value { font-size: 1.9rem; font-weight: 900; color: #14213d; line-height: 1; margin-bottom: 4px; }
+  .stat-card .label { font-size: 0.78rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
+  .section-card { background: #fff; border-radius: 14px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 24px; }
+  .section-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px; }
+  .section-card-header h3 { font-size: 1.05rem; font-weight: 800; }
+  /* Vehicle form */
+  .veh-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media(max-width:1100px){.admin-layout{grid-template-columns:1fr;}  .admin-sidebar{position:static;height:auto;display:flex;overflow-x:auto;padding:10px 0;} .admin-nav-item{flex-direction:column;padding:10px 16px;border-left:none;border-bottom:3px solid transparent;font-size:0.78rem;} .admin-nav-item.active{border-bottom-color:#ff6a3d;border-left:none;} .admin-main{padding:20px;}}
+  @media(max-width:600px){.veh-form-grid{grid-template-columns:1fr;} .stats-grid{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo"><a href="index.html">Ride<span>India</span> 🚗</a></div>
+  <nav class="site-nav" id="siteNav">
+    <a href="index.html">Home</a>
+    <a href="admin.html" class="active">Admin</a>
+    <button class="btn btn-outline btn-sm" onclick="doLogout()">Logout</button>
+  </nav>
+  <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+</header>
+
+<div class="admin-layout">
+  <!-- Sidebar -->
+  <aside class="admin-sidebar">
+    <div class="admin-logo">Admin Panel</div>
+    <div class="admin-nav-item active" onclick="showPage('dashboard')"><span class="nav-icon">📊</span> Dashboard</div>
+    <div class="admin-nav-item" onclick="showPage('bookings')"><span class="nav-icon">📋</span> Bookings</div>
+    <div class="admin-nav-item" onclick="showPage('vehicles')"><span class="nav-icon">🚗</span> Vehicles</div>
+    <div class="admin-nav-item" onclick="showPage('users')"><span class="nav-icon">👥</span> Users</div>
+    <div style="position:absolute;bottom:20px;left:0;right:0;padding:0 22px;" class="admin-nav-end">
+      <button class="btn btn-outline btn-full btn-sm" style="color:#94a3b8;border-color:rgba(255,255,255,0.1);margin-top:16px;" onclick="doLogout()">Logout</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="admin-main">
+
+    <!-- Dashboard -->
+    <div class="admin-page active" id="page-dashboard">
+      <div class="page-title">Dashboard</div>
+      <div class="page-sub">Welcome back, Admin! Here's your overview.</div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="icon">👥</div><div class="value" id="s-users">—</div><div class="label">Total Users</div></div>
+        <div class="stat-card blue"><div class="icon">🚗</div><div class="value" id="s-vehicles">—</div><div class="label">Vehicles</div></div>
+        <div class="stat-card yellow"><div class="icon">⏳</div><div class="value" id="s-pending">—</div><div class="label">Pending Bookings</div></div>
+        <div class="stat-card green"><div class="icon">✅</div><div class="value" id="s-confirmed">—</div><div class="label">Confirmed Bookings</div></div>
+        <div class="stat-card purple"><div class="icon">💰</div><div class="value" id="s-revenue">—</div><div class="label">Total Revenue</div></div>
+      </div>
+      <div class="section-card">
+        <div class="section-card-header"><h3>Recent Bookings</h3><button class="btn btn-outline btn-sm" onclick="showPage('bookings')">View All →</button></div>
+        <div class="table-wrap" id="recentBookings"><div class="loading-center"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+    <!-- Bookings -->
+    <div class="admin-page" id="page-bookings">
+      <div class="page-title">All Bookings</div>
+      <div class="page-sub">Manage and update booking statuses.</div>
+      <div class="section-card">
+        <div class="section-card-header">
+          <h3 id="bookingsCount">Bookings</h3>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" onclick="filterAdminBookings('')">All</button>
+            <button class="btn btn-outline btn-sm" onclick="filterAdminBookings('pending')">Pending</button>
+            <button class="btn btn-outline btn-sm" onclick="filterAdminBookings('confirmed')">Confirmed</button>
+            <button class="btn btn-outline btn-sm" onclick="filterAdminBookings('cancelled')">Cancelled</button>
+          </div>
+        </div>
+        <div class="table-wrap" id="allBookingsTable"><div class="loading-center"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+    <!-- Vehicles -->
+    <div class="admin-page" id="page-vehicles">
+      <div class="page-title">Vehicles</div>
+      <div class="page-sub">Add, edit, or remove vehicles from the fleet.</div>
+
+      <!-- Add Vehicle Form -->
+      <div class="section-card" id="vehicleFormCard">
+        <div class="section-card-header">
+          <h3 id="vehicleFormTitle">Add New Vehicle</h3>
+          <button class="btn btn-outline btn-sm" id="cancelEditBtn" onclick="resetVehicleForm()" style="display:none;">Cancel Edit</button>
+        </div>
+        <div class="veh-form-grid">
+          <div class="form-group"><label class="form-label">Vehicle Name *</label><input type="text" class="form-input" id="vName" placeholder="e.g. Maruti Swift" /></div>
+          <div class="form-group"><label class="form-label">Type *</label><select class="form-select" id="vType"><option value="Car">Car</option><option value="Bike">Bike</option><option value="Scooter">Scooter</option></select></div>
+          <div class="form-group"><label class="form-label">City *</label><select class="form-select" id="vCity"><option value="Delhi">Delhi</option><option value="Mumbai">Mumbai</option><option value="Bangalore">Bangalore</option><option value="Chennai">Chennai</option><option value="Hyderabad">Hyderabad</option><option value="Kolkata">Kolkata</option><option value="Pune">Pune</option><option value="Jaipur">Jaipur</option><option value="Goa">Goa</option><option value="Ahmedabad">Ahmedabad</option></select></div>
+          <div class="form-group"><label class="form-label">Price / Day (₹) *</label><input type="number" class="form-input" id="vPrice" placeholder="1500" min="100" /></div>
+          <div class="form-group"><label class="form-label">Icon (emoji)</label><input type="text" class="form-input" id="vIcon" placeholder="🚗" maxlength="4" /></div>
+          <div class="form-group"><label class="form-label">Seats</label><input type="number" class="form-input" id="vSeats" placeholder="5" min="1" max="10" /></div>
+          <div class="form-group"><label class="form-label">Fuel Type</label><select class="form-select" id="vFuel"><option>Petrol</option><option>Diesel</option><option>Electric</option><option>CNG</option></select></div>
+          <div class="form-group"><label class="form-label">Transmission</label><select class="form-select" id="vTrans"><option>Manual</option><option>Automatic</option></select></div>
+        </div>
+        <div class="form-group"><label class="form-label">Description</label><textarea class="form-input" id="vDesc" rows="2" placeholder="Brief vehicle description…" style="resize:vertical;"></textarea></div>
+        <div id="vehicleFormError" class="alert alert-error" style="display:none;"></div>
+        <button class="btn btn-primary" id="vehicleFormBtn" onclick="submitVehicle()">Add Vehicle</button>
+      </div>
+
+      <!-- Vehicles Table -->
+      <div class="section-card">
+        <div class="section-card-header"><h3 id="vehicleCount">Fleet</h3></div>
+        <div class="table-wrap" id="vehiclesTable"><div class="loading-center"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+    <!-- Users -->
+    <div class="admin-page" id="page-users">
+      <div class="page-title">Users</div>
+      <div class="page-sub">Registered users on the platform.</div>
+      <div class="section-card">
+        <div class="section-card-header"><h3 id="usersCount">Users</h3></div>
+        <div class="table-wrap" id="usersTable"><div class="loading-center"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+  const API = '';
+  let allAdminBookings = [], allAdminVehicles = [], editingVehicleId = null;
+
+  async function init() {
+    // Auth check — must be admin
+    try {
+      const res = await fetch(`${API}/api/auth/me`, { credentials:'include' });
+      if (!res.ok) { window.location.href='login.html'; return; }
+      const { user } = await res.json();
+      if (user.role !== 'admin') { window.location.href='profile.html'; return; }
+    } catch { window.location.href='login.html'; return; }
+
+    loadStats();
+    loadAdminBookings();
+  }
+
+  function showPage(page) {
+    document.querySelectorAll('.admin-page').forEach(p=>p.classList.remove('active'));
+    document.getElementById('page-'+page).classList.add('active');
+    document.querySelectorAll('.admin-nav-item').forEach(n=>n.classList.remove('active'));
+    document.querySelectorAll('.admin-nav-item').forEach(n=>{ if(n.textContent.toLowerCase().includes(page.slice(0,3))) n.classList.add('active'); });
+    if (page==='vehicles') loadAdminVehicles();
+    if (page==='users') loadAdminUsers();
+  }
+
+  // ── Stats ───────────────────────────────────────────────────────────────────
+  async function loadStats() {
+    try {
+      const res  = await fetch(`${API}/api/admin/stats`, { credentials:'include' });
+      const data = await res.json();
+      document.getElementById('s-users').textContent    = data.totalUsers;
+      document.getElementById('s-vehicles').textContent = data.totalVehicles;
+      document.getElementById('s-pending').textContent  = data.pendingBookings;
+      document.getElementById('s-confirmed').textContent= data.confirmedBookings;
+      document.getElementById('s-revenue').textContent  = '₹'+Number(data.totalRevenue).toLocaleString('en-IN');
+    } catch {}
+  }
+
+  // ── Bookings ────────────────────────────────────────────────────────────────
+  async function loadAdminBookings() {
+    try {
+      const res  = await fetch(`${API}/api/admin/bookings`, { credentials:'include' });
+      const data = await res.json();
+      allAdminBookings = data.bookings || [];
+      renderRecentBookings();
+      renderAllBookings('');
+    } catch {}
+  }
+
+  function renderRecentBookings() {
+    const recent = allAdminBookings.slice(0,5);
+    document.getElementById('recentBookings').innerHTML = recent.length===0
+      ? '<p style="padding:20px;color:#6b7280;">No bookings yet.</p>'
+      : bookingsTable(recent);
+  }
+
+  function filterAdminBookings(status) { renderAllBookings(status); }
+
+  function renderAllBookings(status) {
+    const items = status ? allAdminBookings.filter(b=>b.status===status) : allAdminBookings;
+    document.getElementById('bookingsCount').textContent = `Bookings (${items.length})`;
+    document.getElementById('allBookingsTable').innerHTML = items.length===0
+      ? '<p style="padding:20px;color:#6b7280;">No bookings found.</p>'
+      : bookingsTable(items, true);
+  }
+
+  function bookingsTable(rows, showActions=false) {
+    return `<table>
+      <thead><tr><th>#</th><th>User</th><th>Vehicle</th><th>Dates</th><th>Total</th><th>Status</th>${showActions?'<th>Actions</th>':''}</tr></thead>
+      <tbody>${rows.map(b=>{
+        const s=new Date(b.start_date).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+        const e=new Date(b.end_date).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+        return `<tr>
+          <td style="color:#6b7280;">#${b.id}</td>
+          <td><div style="font-weight:600;">${b.user_name}</div><small style="color:#6b7280;">${b.email}</small></td>
+          <td>${b.icon||'🚗'} ${b.vehicle_name}<br><small style="color:#6b7280;">${b.city}</small></td>
+          <td style="font-size:0.85rem;">${s} → ${e}</td>
+          <td style="font-weight:700;color:#ff6a3d;">₹${Number(b.total_price).toLocaleString('en-IN')}</td>
+          <td><span class="badge badge-${b.status}">${b.status}</span></td>
+          ${showActions?`<td style="display:flex;gap:6px;flex-wrap:wrap;">
+            ${b.status!=='confirmed'?`<button class="btn btn-success btn-sm" onclick="updateBookingStatus(${b.id},'confirmed')">✓ Confirm</button>`:''}
+            ${b.status!=='cancelled'?`<button class="btn btn-danger btn-sm" onclick="updateBookingStatus(${b.id},'cancelled')">✕ Cancel</button>`:''}
+          </td>`:''}
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+  }
+
+  async function updateBookingStatus(id, status) {
+    try {
+      const res=await fetch(`${API}/api/admin/bookings/${id}/status`,{method:'PUT',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});
+      if(res.ok){
+        const idx=allAdminBookings.findIndex(b=>b.id===id);
+        if(idx!==-1) allAdminBookings[idx].status=status;
+        renderRecentBookings(); renderAllBookings('');
+        loadStats();
+        showToast(`Booking ${status}!`,'success');
+      } else { const d=await res.json(); showToast(d.error||'Failed','error'); }
+    } catch { showToast('Network error','error'); }
+  }
+
+  // ── Vehicles ────────────────────────────────────────────────────────────────
+  async function loadAdminVehicles() {
+    try {
+      const res  = await fetch(`${API}/api/vehicles`, { credentials:'include' });
+      const data = await res.json();
+      allAdminVehicles = data.vehicles||[];
+      document.getElementById('vehicleCount').textContent = `Fleet (${allAdminVehicles.length} vehicles)`;
+      renderVehiclesTable();
+    } catch {}
+  }
+
+  function renderVehiclesTable() {
+    const wrap = document.getElementById('vehiclesTable');
+    if (allAdminVehicles.length===0) { wrap.innerHTML='<p style="padding:20px;color:#6b7280;">No vehicles.</p>'; return; }
+    wrap.innerHTML = `<table>
+      <thead><tr><th>#</th><th>Vehicle</th><th>City</th><th>Type</th><th>Price/Day</th><th>Fuel</th><th>Available</th><th>Actions</th></tr></thead>
+      <tbody>${allAdminVehicles.map(v=>`
+        <tr>
+          <td style="color:#6b7280;">${v.id}</td>
+          <td>${v.icon} <strong>${v.name}</strong></td>
+          <td>${v.city}</td>
+          <td>${v.type}</td>
+          <td style="font-weight:700;color:#ff6a3d;">₹${v.price_day}</td>
+          <td>${v.fuel||'Petrol'}</td>
+          <td><span class="badge ${v.available?'badge-confirmed':'badge-cancelled'}">${v.available?'Yes':'No'}</span></td>
+          <td style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" onclick='editVehicle(${JSON.stringify(v)})'>✏️ Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteVehicle(${v.id})">🗑 Delete</button>
+          </td>
+        </tr>
+      `).join('')}</tbody>
+    </table>`;
+  }
+
+  async function submitVehicle() {
+    const errEl = document.getElementById('vehicleFormError');
+    const body = {
+      name: document.getElementById('vName').value.trim(),
+      type: document.getElementById('vType').value,
+      city: document.getElementById('vCity').value,
+      price_day: Number(document.getElementById('vPrice').value),
+      icon: document.getElementById('vIcon').value.trim()||'🚗',
+      seats: Number(document.getElementById('vSeats').value)||null,
+      fuel: document.getElementById('vFuel').value,
+      transmission: document.getElementById('vTrans').value,
+      description: document.getElementById('vDesc').value.trim(),
+    };
+    if (!body.name||!body.price_day){errEl.textContent='Name and price are required.';errEl.style.display='block';return;}
+    errEl.style.display='none';
+    const url   = editingVehicleId ? `${API}/api/vehicles/${editingVehicleId}` : `${API}/api/vehicles`;
+    const method= editingVehicleId ? 'PUT' : 'POST';
+    try {
+      const res=await fetch(url,{method,credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      const data=await res.json();
+      if(!res.ok){errEl.textContent=data.error||'Failed.';errEl.style.display='block';return;}
+      showToast(editingVehicleId?'Vehicle updated!':'Vehicle added!','success');
+      resetVehicleForm(); loadAdminVehicles(); loadStats();
+    } catch {errEl.textContent='Network error.';errEl.style.display='block';}
+  }
+
+  function editVehicle(v) {
+    editingVehicleId=v.id;
+    document.getElementById('vehicleFormTitle').textContent='Edit Vehicle';
+    document.getElementById('vehicleFormBtn').textContent='Update Vehicle';
+    document.getElementById('cancelEditBtn').style.display='inline-flex';
+    document.getElementById('vName').value=v.name||'';
+    document.getElementById('vType').value=v.type||'Car';
+    document.getElementById('vCity').value=v.city||'Delhi';
+    document.getElementById('vPrice').value=v.price_day||'';
+    document.getElementById('vIcon').value=v.icon||'🚗';
+    document.getElementById('vSeats').value=v.seats||'';
+    document.getElementById('vFuel').value=v.fuel||'Petrol';
+    document.getElementById('vTrans').value=v.transmission||'Manual';
+    document.getElementById('vDesc').value=v.description||'';
+    document.getElementById('vehicleFormCard').scrollIntoView({behavior:'smooth'});
+  }
+
+  function resetVehicleForm() {
+    editingVehicleId=null;
+    document.getElementById('vehicleFormTitle').textContent='Add New Vehicle';
+    document.getElementById('vehicleFormBtn').textContent='Add Vehicle';
+    document.getElementById('cancelEditBtn').style.display='none';
+    ['vName','vPrice','vIcon','vSeats','vDesc'].forEach(id=>document.getElementById(id).value='');
+  }
+
+  async function deleteVehicle(id) {
+    if(!confirm('Delete this vehicle? This cannot be undone.'))return;
+    try {
+      const res=await fetch(`${API}/api/vehicles/${id}`,{method:'DELETE',credentials:'include'});
+      if(res.ok){showToast('Vehicle deleted.','success');loadAdminVehicles();loadStats();}
+      else {const d=await res.json();showToast(d.error||'Failed.','error');}
+    } catch{showToast('Network error.','error');}
+  }
+
+  // ── Users ────────────────────────────────────────────────────────────────────
+  async function loadAdminUsers() {
+    try {
+      const res  = await fetch(`${API}/api/admin/users`, { credentials:'include' });
+      const data = await res.json();
+      const users = data.users||[];
+      document.getElementById('usersCount').textContent = `Users (${users.length})`;
+      document.getElementById('usersTable').innerHTML = `<table>
+        <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Joined</th></tr></thead>
+        <tbody>${users.map(u=>`
+          <tr>
+            <td style="color:#6b7280;">${u.id}</td>
+            <td><strong>${u.name}</strong></td>
+            <td>${u.email}</td>
+            <td>${u.phone||'—'}</td>
+            <td><span class="badge ${u.role==='admin'?'badge-confirmed':'badge-pending'}">${u.role}</span></td>
+            <td style="font-size:0.82rem;color:#6b7280;">${new Date(u.created_at).toLocaleDateString('en-IN')}</td>
+          </tr>
+        `).join('')}</tbody>
+      </table>`;
+    } catch {}
+  }
+
+  async function doLogout() {
+    await fetch(`${API}/api/auth/logout`,{method:'POST',credentials:'include'});
+    window.location.href='index.html';
+  }
+
+  function showToast(msg,type=''){const t=document.createElement('div');t.className=`toast${type?' toast-'+type:''}`;t.textContent=msg;document.getElementById('toast-container').appendChild(t);setTimeout(()=>t.remove(),3500);}
+  document.getElementById('hamburger').addEventListener('click',()=>document.getElementById('siteNav').classList.toggle('open'));
+
+  init();
+</script>
+</body>
+</html>

@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RideIndia — Self-Drive Car & Bike Rentals Across India</title>
+<meta name="description" content="Rent cars, bikes, and scooters across 10+ Indian cities with RideIndia. Instant booking, transparent pricing, no hidden charges." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="assets/style.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+  /* ── Hero ─────────────────────────────────────────────────────────────── */
+  .hero {
+    background: linear-gradient(135deg, #14213d 0%, #1f3a63 60%, #0f2d54 100%);
+    color: #fff; padding: 80px 6% 60px; text-align: center; position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 70% 50%, rgba(255,106,61,0.15) 0%, transparent 70%);
+  }
+  .hero-badge {
+    display: inline-block; background: rgba(255,106,61,0.2); border: 1px solid rgba(255,106,61,0.4);
+    color: #ff6a3d; padding: 6px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+    margin-bottom: 20px; backdrop-filter: blur(4px);
+  }
+  .hero h1 { font-size: 3rem; font-weight: 900; margin-bottom: 14px; letter-spacing: -1px; line-height: 1.15; position: relative; }
+  .hero h1 span { color: #ff6a3d; }
+  .hero p { color: #94a3b8; font-size: 1.1rem; margin-bottom: 36px; max-width: 520px; margin-inline: auto; position: relative; }
+
+  /* ── Search Card ─────────────────────────────────────────────────────── */
+  .search-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 0;
+    max-width: 960px;
+    margin: 0 auto;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.35);
+    overflow: visible;
+    position: relative;
+  }
+
+  /* Row 1 — pickup/drop */
+  .search-row-1 {
+    display: grid;
+    grid-template-columns: 1fr 44px 1fr;
+    gap: 0;
+    border-bottom: 1px solid #f1f3f5;
+    align-items: stretch;
+  }
+  .loc-field {
+    padding: 18px 22px 14px;
+    position: relative;
+  }
+  .loc-field:first-child { border-radius: 20px 0 0 0; }
+  .loc-field:last-child  { border-radius: 0 20px 0 0; }
+  .loc-field:first-child { border-right: 1px solid #f1f3f5; }
+  .loc-field:last-child  { border-left: 1px solid #f1f3f5; }
+  .loc-field label {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.72rem; font-weight: 700; color: #9ca3af;
+    text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 5px;
+  }
+  .loc-field label .dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+  .dot-green  { background: #16a34a; }
+  .dot-red    { background: #dc2626; }
+  .loc-input {
+    width: 100%; border: none; outline: none;
+    font-size: 1rem; font-weight: 600; color: #14213d;
+    font-family: 'Inter', sans-serif; background: transparent;
+    padding: 0;
+  }
+  .loc-input::placeholder { color: #d1d5db; font-weight: 400; }
+  .loc-suggestions {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+    background: #fff; border-radius: 12px; border: 1px solid #e5e7eb;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 500;
+    overflow: hidden; display: none;
+  }
+  .loc-suggestions.open { display: block; }
+  .loc-suggestion-item {
+    padding: 11px 18px; cursor: pointer; font-size: 0.9rem; font-weight: 500;
+    display: flex; align-items: center; gap: 10px;
+    transition: background .15s;
+  }
+  .loc-suggestion-item:hover { background: #f7f8fa; color: #ff6a3d; }
+  .loc-suggestion-item .si-icon { font-size: 1rem; opacity: 0.6; }
+
+  /* Swap button between pickup/drop */
+  .swap-btn {
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: none; cursor: pointer;
+    font-size: 1.1rem; color: #6b7280; transition: all .2s;
+    position: relative; z-index: 10;
+  }
+  .swap-btn:hover { color: #ff6a3d; transform: rotate(180deg); }
+  .swap-inner {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: #f7f8fa; border: 1.5px solid #e5e7eb;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color .2s, background .2s;
+  }
+  .swap-btn:hover .swap-inner { border-color: #ff6a3d; background: #fff3ec; }
+
+  /* Row 2 — dates + type + search btn */
+  .search-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 0;
+    align-items: stretch;
+  }
+  .search-field {
+    padding: 14px 22px 16px;
+    border-right: 1px solid #f1f3f5;
+  }
+  .search-field:last-of-type { border-right: none; }
+  .search-field label {
+    display: block; font-size: 0.72rem; font-weight: 700;
+    color: #9ca3af; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 5px;
+  }
+  .search-field select, .search-field input {
+    width: 100%; border: none; outline: none; padding: 0;
+    font-size: 0.93rem; font-weight: 600; color: #14213d;
+    font-family: 'Inter', sans-serif; background: transparent; cursor: pointer;
+  }
+  .search-field select option { font-weight: 400; }
+  .search-btn-wrap {
+    padding: 10px 12px;
+    display: flex; align-items: center;
+    border-radius: 0 0 20px 0;
+  }
+  .search-btn {
+    padding: 14px 28px; background: #ff6a3d; color: #fff;
+    border: none; border-radius: 12px; font-size: 0.95rem;
+    font-weight: 700; cursor: pointer; white-space: nowrap;
+    transition: background .2s, transform .2s, box-shadow .2s;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .search-btn:hover { background: #e2531f; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,106,61,0.4); }
+
+  /* Route connector line */
+  .route-line {
+    position: absolute; left: 50%; top: 22px; bottom: 22px;
+    width: 2px; background: linear-gradient(to bottom, #16a34a, #dc2626);
+    transform: translateX(-50%); pointer-events: none; border-radius: 2px;
+  }
+
+  .hero-stats { display: flex; gap: 40px; justify-content: center; margin-top: 36px; flex-wrap: wrap; position: relative; }
+  .hero-stat .num { font-size: 1.8rem; font-weight: 800; color: #fff; }
+  .hero-stat .lbl { font-size: 0.8rem; color: #94a3b8; }
+
+  /* ── Map ─────────────────────────────────────────────────────────────── */
+  .map-section { padding: 64px 6%; background: #f7f8fa; text-align: center; }
+  .section-label { font-size: 0.8rem; font-weight: 700; color: #ff6a3d; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+  .section-title { font-size: 2rem; font-weight: 800; color: #14213d; margin-bottom: 10px; letter-spacing: -0.5px; }
+  .section-sub { color: #6b7280; font-size: 1rem; margin-bottom: 30px; }
+  #india-map { height: 500px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); max-width: 1040px; margin: 0 auto; }
+
+  /* ── Vehicles ─────────────────────────────────────────────────────────── */
+  .vehicles-section { padding: 64px 6%; }
+  .section-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 28px; }
+  .filter-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+  .filter-tabs button {
+    padding: 8px 20px; border-radius: 20px; border: 1.5px solid #e5e7eb;
+    background: #fff; cursor: pointer; font-weight: 600; font-size: 0.85rem; color: #6b7280;
+    transition: all .2s;
+  }
+  .filter-tabs button.active { background: #14213d; color: #fff; border-color: #14213d; }
+  .filter-tabs button:hover:not(.active) { border-color: #ff6a3d; color: #ff6a3d; }
+  .city-tag { background: #ff6a3d; color: #fff; padding: 6px 18px; border-radius: 20px; font-weight: 700; font-size: 0.85rem; }
+
+  /* ── How It Works ────────────────────────────────────────────────────── */
+  .how-section { background: linear-gradient(135deg, #14213d, #1f3a63); padding: 72px 6%; text-align: center; color: #fff; }
+  .how-section .section-title { color: #fff; }
+  .how-section .section-sub { color: #94a3b8; }
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; margin-top: 40px; max-width: 1000px; margin-inline: auto; }
+  .step { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 28px 22px; backdrop-filter: blur(8px); transition: transform .2s, background .2s; }
+  .step:hover { transform: translateY(-4px); background: rgba(255,255,255,0.1); }
+  .step-num { width: 44px; height: 44px; border-radius: 50%; background: #ff6a3d; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; margin: 0 auto 16px; }
+  .step h3 { color: #fff; font-size: 1rem; margin-bottom: 8px; }
+  .step p { color: #94a3b8; font-size: 0.88rem; line-height: 1.6; }
+
+  /* ── Why Us ──────────────────────────────────────────────────────────── */
+  .why-section { padding: 72px 6%; }
+  .why-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 22px; margin-top: 40px; }
+  .why-card { background: #f7f8fa; border-radius: 16px; padding: 28px 22px; border: 1px solid #e5e7eb; transition: transform .2s, box-shadow .2s; }
+  .why-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+  .why-icon { font-size: 2.2rem; margin-bottom: 14px; }
+  .why-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+  .why-card p { color: #6b7280; font-size: 0.88rem; line-height: 1.6; }
+
+  /* ── Booking Modal ───────────────────────────────────────────────────── */
+  .cost-summary { background: #f7f8fa; border-radius: 10px; padding: 14px 16px; margin: 14px 0; }
+  .cost-row { display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 6px; }
+  .cost-row.total { font-weight: 700; font-size: 1rem; border-top: 1px solid #e5e7eb; padding-top: 10px; margin-top: 6px; }
+
+  @media (max-width: 860px) {
+    .search-row-1 { grid-template-columns: 1fr 44px 1fr; }
+    .search-row-2 { grid-template-columns: 1fr 1fr; }
+    .search-btn-wrap { grid-column: 1/-1; border-radius: 0 0 20px 20px; padding: 10px 16px 14px; }
+    .search-btn { width: 100%; justify-content: center; }
+  }
+  @media (max-width: 560px) {
+    .hero h1 { font-size: 1.9rem; }
+    .search-row-1 { grid-template-columns: 1fr 40px 1fr; }
+    .search-row-2 { grid-template-columns: 1fr; }
+    .loc-field, .search-field { padding: 12px 16px; }
+    .search-btn-wrap { padding: 8px 16px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Header ─────────────────────────────────────────────────────────────── -->
+<header class="site-header">
+  <div class="logo">Ride<span>India</span> 🚗</div>
+  <nav class="site-nav" id="siteNav">
+    <a href="index.html" class="active">Home</a>
+    <a href="vehicles.html">Vehicles</a>
+    <a href="#map-section">Locations</a>
+    <a href="#how">How It Works</a>
+    <a href="login.html" class="nav-btn" id="navAuthBtn">Sign In</a>
+  </nav>
+  <button class="hamburger" id="hamburger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</header>
+
+<!-- ── Hero ───────────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-badge">🇮🇳 Available across 10+ cities in India</div>
+  <h1>Rent a Car or Bike,<br><span>Anywhere in India</span></h1>
+  <p>Self-drive freedom. Transparent pricing. Instant booking. No hidden charges.</p>
+
+  <div class="search-card" id="searchCard">
+
+    <!-- Row 1: Pickup & Drop Location -->
+    <div class="search-row-1">
+
+      <!-- Pickup Location -->
+      <div class="loc-field" id="pickupField">
+        <label><span class="dot dot-green"></span>Pickup Location</label>
+        <input
+          type="text"
+          class="loc-input"
+          id="pickupInput"
+          placeholder="Enter pickup city…"
+          autocomplete="off"
+          oninput="filterSuggestions('pickup')"
+          onfocus="showSuggestions('pickup')"
+        />
+        <div class="loc-suggestions" id="pickupSuggestions"></div>
+      </div>
+
+      <!-- Swap Button -->
+      <button class="swap-btn" onclick="swapLocations()" title="Swap locations">
+        <div class="swap-inner">⇄</div>
+      </button>
+
+      <!-- Drop Location -->
+      <div class="loc-field" id="dropField">
+        <label><span class="dot dot-red"></span>Drop Location</label>
+        <input
+          type="text"
+          class="loc-input"
+          id="dropInput"
+          placeholder="Enter drop city…"
+          autocomplete="off"
+          oninput="filterSuggestions('drop')"
+          onfocus="showSuggestions('drop')"
+        />
+        <div class="loc-suggestions" id="dropSuggestions"></div>
+      </div>
+    </div>
+
+    <!-- Row 2: Dates + Type + Search -->
+    <div class="search-row-2">
+      <div class="search-field">
+        <label>📅 Pickup Date</label>
+        <input type="date" id="startDate" />
+      </div>
+      <div class="search-field">
+        <label>📅 Return Date</label>
+        <input type="date" id="endDate" />
+      </div>
+      <div class="search-field">
+        <label>🚗 Vehicle Type</label>
+        <select id="typeSelect">
+          <option value="all">Any Type</option>
+          <option value="Car">🚗 Car</option>
+          <option value="Bike">🏍️ Bike</option>
+          <option value="Scooter">🛵 Scooter</option>
+        </select>
+      </div>
+      <div class="search-btn-wrap">
+        <button class="search-btn" id="heroSearchBtn" onclick="searchVehicles()">
+          <span>🔍</span> Search Rides
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="hero-stats">
+    <div class="hero-stat"><div class="num">10+</div><div class="lbl">Cities</div></div>
+    <div class="hero-stat"><div class="num">24+</div><div class="lbl">Vehicles</div></div>
+    <div class="hero-stat"><div class="num">₹380</div><div class="lbl">Starting / day</div></div>
+    <div class="hero-stat"><div class="num">5★</div><div class="lbl">Avg Rating</div></div>
+  </div>
+</section>
+
+<!-- ── Map Section ─────────────────────────────────────────────────────────── -->
+<section class="map-section" id="map-section">
+  <p class="section-label">Explore India</p>
+  <h2 class="section-title">Find Vehicles Near You</h2>
+  <p class="section-sub">Click a city marker to see all available rides in that location.</p>
+  <div id="india-map"></div>
+</section>
+
+<!-- ── Vehicles Section ────────────────────────────────────────────────────── -->
+<section class="vehicles-section" id="vehicles">
+  <div class="section-header">
+    <div>
+      <p class="section-label">Browse Fleet</p>
+      <h2 class="section-title" style="margin-bottom:0">Available Vehicles</h2>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <span class="city-tag" id="cityTag">All Cities</span>
+      <a href="vehicles.html" class="btn btn-outline btn-sm">View All →</a>
+    </div>
+  </div>
+
+  <div class="filter-tabs" id="filterTabs">
+    <button class="active" data-type="all" onclick="setTypeFilter('all',this)">All</button>
+    <button data-type="Car" onclick="setTypeFilter('Car',this)">🚗 Cars</button>
+    <button data-type="Bike" onclick="setTypeFilter('Bike',this)">🏍️ Bikes</button>
+    <button data-type="Scooter" onclick="setTypeFilter('Scooter',this)">🛵 Scooters</button>
+  </div>
+
+  <div class="vehicle-grid" id="vehicleGrid">
+    <div class="loading-center"><div class="spinner"></div></div>
+  </div>
+</section>
+
+<!-- ── How It Works ────────────────────────────────────────────────────────── -->
+<section class="how-section" id="how">
+  <p class="section-label" style="color:#ff6a3d">Simple Process</p>
+  <h2 class="section-title">How It Works</h2>
+  <p class="section-sub">Four easy steps to your perfect ride</p>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><h3>Pick a City</h3><p>Choose from 10+ cities across India using the map or search bar.</p></div>
+    <div class="step"><div class="step-num">2</div><h3>Choose Your Ride</h3><p>Browse cars, bikes, and scooters with transparent daily pricing.</p></div>
+    <div class="step"><div class="step-num">3</div><h3>Book Instantly</h3><p>Select your dates, create an account, and confirm your booking.</p></div>
+    <div class="step"><div class="step-num">4</div><h3>Pick Up & Go</h3><p>Meet your vehicle at the pinned location and start your adventure.</p></div>
+  </div>
+</section>
+
+<!-- ── Why RideIndia ───────────────────────────────────────────────────────── -->
+<section class="why-section">
+  <p class="section-label" style="text-align:center">Why Choose Us</p>
+  <h2 class="section-title" style="text-align:center">The RideIndia Difference</h2>
+  <div class="why-grid">
+    <div class="why-card"><div class="why-icon">💰</div><h3>No Hidden Charges</h3><p>What you see is what you pay. Transparent pricing with all-inclusive daily rates.</p></div>
+    <div class="why-card"><div class="why-icon">⚡</div><h3>Instant Confirmation</h3><p>Book online in under 2 minutes. No calls, no waiting — instant booking confirmation.</p></div>
+    <div class="why-card"><div class="why-icon">🛡️</div><h3>Verified Vehicles</h3><p>Every vehicle is regularly inspected and insured for your safety and peace of mind.</p></div>
+    <div class="why-card"><div class="why-icon">📱</div><h3>24/7 Support</h3><p>Our team is always available to assist you, wherever you are on the road.</p></div>
+  </div>
+</section>
+
+<!-- ── Footer ──────────────────────────────────────────────────────────────── -->
+<footer class="site-footer">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div class="logo">Ride<span style="color:#fff">India</span> 🚗</div>
+      <p>Self-drive car, bike &amp; scooter rentals across India. Freedom on your terms.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Quick Links</h4>
+      <a href="index.html">Home</a>
+      <a href="vehicles.html">All Vehicles</a>
+      <a href="#how">How It Works</a>
+    </div>
+    <div class="footer-col">
+      <h4>Account</h4>
+      <a href="login.html">Sign In</a>
+      <a href="login.html#register">Register</a>
+      <a href="profile.html">My Bookings</a>
+    </div>
+    <div class="footer-col">
+      <h4>Cities</h4>
+      <a href="#">Delhi</a>
+      <a href="#">Mumbai</a>
+      <a href="#">Bangalore</a>
+      <a href="#">Goa</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p><strong>RideIndia</strong> — © 2026 All rights reserved.</p>
+  </div>
+</footer>
+
+<!-- ── Booking Modal ────────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h3 id="modalTitle" style="font-size:1.15rem;font-weight:800;margin-bottom:4px;">Book Vehicle</h3>
+    <p id="modalSubtitle" style="color:#6b7280;font-size:0.85rem;margin-bottom:16px;"></p>
+    <div id="bookingForm">
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input type="text" class="form-input" id="fullName" placeholder="Your full name" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone Number</label>
+        <input type="tel" class="form-input" id="phone" placeholder="10-digit mobile number" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group">
+          <label class="form-label">Pickup Date</label>
+          <input type="date" class="form-input" id="modalStartDate" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Return Date</label>
+          <input type="date" class="form-input" id="modalEndDate" />
+        </div>
+      </div>
+      <div class="cost-summary" id="costSummary" style="display:none;">
+        <div class="cost-row"><span id="daysLabel">Days</span><span id="daysVal">—</span></div>
+        <div class="cost-row"><span>Daily Rate</span><span id="rateVal">—</span></div>
+        <div class="cost-row total"><span>Total</span><span id="totalVal" style="color:#ff6a3d;">—</span></div>
+      </div>
+      <div id="bookingError" class="alert alert-error" style="display:none;"></div>
+      <button class="btn btn-primary btn-full" style="margin-top:8px;" onclick="confirmBooking()" id="confirmBtn">Confirm Booking</button>
+      <p style="font-size:0.78rem;color:#6b7280;text-align:center;margin-top:10px;">You need to <a href="login.html" style="color:#ff6a3d;font-weight:600;">sign in</a> to complete your booking.</p>
+    </div>
+    <div id="successMsg" style="display:none;text-align:center;padding:20px 0;">
+      <div style="font-size:3rem;margin-bottom:12px;">✅</div>
+      <h3 style="color:#16a34a;margin-bottom:8px;">Booking Confirmed!</h3>
+      <p style="color:#6b7280;font-size:0.9rem;">Your booking request has been received. Check your <a href="profile.html" style="color:#ff6a3d;font-weight:600;">profile</a> for details.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast Container ─────────────────────────────────────────────────────── -->
+<div id="toast-container"></div>
+
+<script>
+  const API = '';  // same origin, backend serves frontend
+
+  const cities = [
+    { name:'Delhi',     lat:28.7041, lng:77.1025 },
+    { name:'Mumbai',    lat:19.0760, lng:72.8777 },
+    { name:'Bangalore', lat:12.9716, lng:77.5946 },
+    { name:'Chennai',   lat:13.0827, lng:80.2707 },
+    { name:'Hyderabad', lat:17.3850, lng:78.4867 },
+    { name:'Kolkata',   lat:22.5726, lng:88.3639 },
+    { name:'Pune',      lat:18.5204, lng:73.8567 },
+    { name:'Jaipur',    lat:26.9124, lng:75.7873 },
+    { name:'Goa',       lat:15.2993, lng:74.1240 },
+    { name:'Ahmedabad', lat:23.0225, lng:72.5714 }
+  ];
+
+  let allVehicles = [];
+  let selectedCity = '';
+  let selectedType = 'all';
+  let bookingVehicle = null;
+
+  // ── Location Autocomplete ─────────────────────────────────────────────────
+  const cityNames = cities.map(c => c.name);
+
+  function showSuggestions(type) {
+    const input = document.getElementById(type + 'Input').value;
+    renderSuggestions(type, input);
+  }
+
+  function filterSuggestions(type) {
+    const val = document.getElementById(type + 'Input').value.trim();
+    renderSuggestions(type, val);
+  }
+
+  function renderSuggestions(type, query) {
+    const box = document.getElementById(type + 'Suggestions');
+    const matches = query.length === 0
+      ? cityNames
+      : cityNames.filter(c => c.toLowerCase().startsWith(query.toLowerCase()));
+    if (matches.length === 0) { box.classList.remove('open'); return; }
+    box.innerHTML = matches.map(c => `
+      <div class="loc-suggestion-item" onclick="selectSuggestion('${type}','${c}')">
+        <span class="si-icon">${type==='pickup' ? '🟢' : '🔴'}</span>${c}
+      </div>
+    `).join('');
+    box.classList.add('open');
+  }
+
+  function selectSuggestion(type, city) {
+    document.getElementById(type + 'Input').value = city;
+    document.getElementById(type + 'Suggestions').classList.remove('open');
+    // Also update vehicle grid city filter when pickup selected
+    if (type === 'pickup') {
+      selectedCity = city;
+      document.getElementById('cityTag').textContent = city;
+      renderVehicles();
+    }
+  }
+
+  function swapLocations() {
+    const pickupEl = document.getElementById('pickupInput');
+    const dropEl   = document.getElementById('dropInput');
+    const temp = pickupEl.value;
+    pickupEl.value = dropEl.value;
+    dropEl.value   = temp;
+    // Animate the swap button
+    const btn = document.querySelector('.swap-btn');
+    btn.style.transition = 'transform 0.3s ease';
+    btn.style.transform  = 'rotate(180deg)';
+    setTimeout(() => { btn.style.transform = ''; }, 300);
+    if (pickupEl.value) { selectedCity = pickupEl.value; document.getElementById('cityTag').textContent = pickupEl.value; renderVehicles(); }
+  }
+
+  // Close suggestions when clicking outside
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.loc-field')) {
+      document.querySelectorAll('.loc-suggestions').forEach(s => s.classList.remove('open'));
+    }
+  });
+
+  // Keyboard nav for suggestions
+  ['pickupInput','dropInput'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        const type = id.replace('Input','');
+        document.getElementById(type+'Suggestions').classList.remove('open');
+      }
+    });
+  });
+
+  // ── City click from map (also updates pickup field) ───────────────────────
+  // (handled by selectCity below)
+
+  // ── Set default dates ─────────────────────────────────────────────────────
+  const today = new Date();
+  const fmt = d => d.toISOString().split('T')[0];
+  document.getElementById('startDate').value = fmt(today);
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
+  document.getElementById('endDate').value = fmt(tomorrow);
+
+  // ── Leaflet Map ───────────────────────────────────────────────────────────
+  const map = L.map('india-map').setView([22.5, 79], 5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors', maxZoom: 12
+  }).addTo(map);
+
+  const customIcon = L.divIcon({
+    className: '',
+    html: '<div style="background:#ff6a3d;width:32px;height:32px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 8px rgba(0,0,0,0.3);border:2px solid #fff;"></div>',
+    iconSize: [32,32], iconAnchor: [16,32]
+  });
+
+  cities.forEach(c => {
+    const marker = L.marker([c.lat, c.lng], { icon: customIcon }).addTo(map);
+    marker.bindPopup(`
+      <div style="font-family:Inter,sans-serif;min-width:140px;">
+        <strong style="font-size:1rem;">${c.name}</strong><br/>
+        <small style="color:#6b7280;">Click to see vehicles</small><br/>
+        <button onclick="selectCity('${c.name}')" style="margin-top:8px;width:100%;padding:7px 12px;border:none;background:#ff6a3d;color:#fff;border-radius:6px;cursor:pointer;font-weight:600;">View Rides</button>
+      </div>
+    `);
+  });
+
+  function selectCity(cityName) {
+    selectedCity = cityName;
+    // Update pickup input
+    document.getElementById('pickupInput').value = cityName;
+    document.getElementById('cityTag').textContent = cityName;
+    map.closePopup();
+    document.getElementById('vehicles').scrollIntoView({ behavior:'smooth' });
+    renderVehicles();
+  }
+
+  // ── Load vehicles from API ────────────────────────────────────────────────
+  async function loadVehicles() {
+    try {
+      const res = await fetch(`${API}/api/vehicles`);
+      const data = await res.json();
+      allVehicles = data.vehicles || [];
+      renderVehicles();
+    } catch {
+      // Fallback to static data if API not running
+      allVehicles = [];
+      document.getElementById('vehicleGrid').innerHTML =
+        '<div class="empty-state"><div class="empty-icon">⚙️</div><h3>Backend not connected</h3><p>Start the backend server to load vehicles.</p></div>';
+    }
+  }
+
+  function setTypeFilter(type, btn) {
+    selectedType = type;
+    document.querySelectorAll('.filter-tabs button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderVehicles();
+  }
+
+  function searchVehicles() {
+    const pickup = document.getElementById('pickupInput').value.trim();
+    const drop   = document.getElementById('dropInput').value.trim();
+    const start  = document.getElementById('startDate').value;
+    const end    = document.getElementById('endDate').value;
+    const type   = document.getElementById('typeSelect').value;
+
+    // Validate at least pickup
+    if (!pickup) {
+      const inp = document.getElementById('pickupInput');
+      inp.style.borderBottom = '2px solid #ff6a3d';
+      inp.placeholder = 'Please enter pickup city!';
+      inp.focus();
+      setTimeout(() => { inp.style.borderBottom = ''; inp.placeholder = 'Enter pickup city…'; }, 2000);
+      return;
+    }
+
+    // Navigate to vehicles page with all params
+    const params = new URLSearchParams();
+    if (pickup)          params.set('city', pickup);
+    if (drop && drop !== pickup) params.set('drop', drop);
+    if (start)           params.set('start', start);
+    if (end)             params.set('end', end);
+    if (type !== 'all')  params.set('type', type);
+    window.location.href = `vehicles.html?${params.toString()}`;
+  }
+
+  function renderVehicles() {
+    const grid = document.getElementById('vehicleGrid');
+    let filtered = allVehicles.filter(v =>
+      (!selectedCity || v.city === selectedCity) &&
+      (selectedType === 'all' || v.type === selectedType)
+    ).slice(0, 8); // show max 8 on home
+
+    if (filtered.length === 0) {
+      grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><h3>No vehicles found</h3><p>Try a different city or vehicle type.</p></div>';
+      return;
+    }
+
+    grid.innerHTML = filtered.map(v => `
+      <div class="vehicle-card">
+        <div class="vehicle-thumb">
+          ${v.icon}
+          <div class="vehicle-type-badge">${v.type}</div>
+        </div>
+        <div class="vehicle-info">
+          <h3>${v.name}</h3>
+          <div class="vehicle-meta">
+            <span>📍 ${v.city}</span>
+            <span>⛽ ${v.fuel || 'Petrol'}</span>
+          </div>
+          <div class="vehicle-specs">
+            ${v.seats ? `<span class="spec-tag">👥 ${v.seats} seats</span>` : ''}
+            <span class="spec-tag">⚙️ ${v.transmission || 'Manual'}</span>
+          </div>
+          <div class="vehicle-price">₹${v.price_day} <small>/ day</small></div>
+          <button class="btn btn-dark btn-full" style="margin-top:12px;" onclick='openModal(${JSON.stringify(v)})'>Book Now</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ── Booking Modal ─────────────────────────────────────────────────────────
+  function openModal(vehicle) {
+    bookingVehicle = vehicle;
+    document.getElementById('modalTitle').textContent = vehicle.name;
+    document.getElementById('modalSubtitle').textContent = `${vehicle.city} · ₹${vehicle.price_day}/day`;
+    document.getElementById('bookingForm').style.display = 'block';
+    document.getElementById('successMsg').style.display = 'none';
+    document.getElementById('bookingError').style.display = 'none';
+    const s = document.getElementById('startDate').value;
+    const e = document.getElementById('endDate').value;
+    document.getElementById('modalStartDate').value = s;
+    document.getElementById('modalEndDate').value = e;
+    if (s && e) updateCost();
+    document.getElementById('modalOverlay').classList.add('active');
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('active');
+  }
+
+  function updateCost() {
+    const s = new Date(document.getElementById('modalStartDate').value);
+    const e = new Date(document.getElementById('modalEndDate').value);
+    if (!bookingVehicle || isNaN(s) || isNaN(e) || e <= s) {
+      document.getElementById('costSummary').style.display = 'none'; return;
+    }
+    const days = Math.ceil((e - s) / (1000*60*60*24));
+    const total = days * bookingVehicle.price_day;
+    document.getElementById('daysLabel').textContent = `${days} day${days>1?'s':''}`;
+    document.getElementById('daysVal').textContent = `× ₹${bookingVehicle.price_day}`;
+    document.getElementById('rateVal').textContent = `₹${bookingVehicle.price_day}/day`;
+    document.getElementById('totalVal').textContent = `₹${total.toLocaleString('en-IN')}`;
+    document.getElementById('costSummary').style.display = 'block';
+  }
+
+  document.getElementById('modalStartDate').addEventListener('change', updateCost);
+  document.getElementById('modalEndDate').addEventListener('change', updateCost);
+  document.getElementById('modalOverlay').addEventListener('click', e => { if(e.target === e.currentTarget) closeModal(); });
+
+  async function confirmBooking() {
+    const name = document.getElementById('fullName').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const start = document.getElementById('modalStartDate').value;
+    const end   = document.getElementById('modalEndDate').value;
+    const errEl = document.getElementById('bookingError');
+
+    if (!name || !phone || !start || !end) {
+      errEl.textContent = 'Please fill in all fields.'; errEl.style.display = 'block'; return;
+    }
+    errEl.style.display = 'none';
+    const btn = document.getElementById('confirmBtn');
+    btn.textContent = 'Booking…'; btn.disabled = true;
+
+    try {
+      const res = await fetch(`${API}/api/bookings`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vehicle_id: bookingVehicle.id, start_date: start, end_date: end })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (res.status === 401) {
+          errEl.innerHTML = 'Please <a href="login.html" style="color:#ff6a3d;font-weight:600;">sign in</a> first to book a vehicle.';
+          errEl.style.display = 'block';
+        } else {
+          errEl.textContent = data.error || 'Booking failed.'; errEl.style.display = 'block';
+        }
+        btn.textContent = 'Confirm Booking'; btn.disabled = false; return;
+      }
+      document.getElementById('bookingForm').style.display = 'none';
+      document.getElementById('successMsg').style.display = 'block';
+      showToast('Booking confirmed! 🎉', 'success');
+    } catch {
+      errEl.textContent = 'Network error. Please try again.'; errEl.style.display = 'block';
+      btn.textContent = 'Confirm Booking'; btn.disabled = false;
+    }
+  }
+
+  // ── Toast ─────────────────────────────────────────────────────────────────
+  function showToast(msg, type='') {
+    const t = document.createElement('div');
+    t.className = `toast ${type ? 'toast-'+type : ''}`;
+    t.textContent = msg;
+    document.getElementById('toast-container').appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+  }
+
+  // ── Auth state ────────────────────────────────────────────────────────────
+  async function checkAuth() {
+    try {
+      const res = await fetch(`${API}/api/auth/me`, { credentials:'include' });
+      if (res.ok) {
+        const { user } = await res.json();
+        const btn = document.getElementById('navAuthBtn');
+        btn.textContent = user.name.split(' ')[0];
+        btn.href = user.role === 'admin' ? 'admin.html' : 'profile.html';
+      }
+    } catch {}
+  }
+
+  // ── Hamburger ─────────────────────────────────────────────────────────────
+  document.getElementById('hamburger').addEventListener('click', () => {
+    document.getElementById('siteNav').classList.toggle('open');
+  });
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  checkAuth();
+  loadVehicles();
+</script>
+</body>
+</html>

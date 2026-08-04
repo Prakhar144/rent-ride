@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Book &amp; Pay — RideIndia</title>
+<meta name="description" content="Book your self-drive vehicle and pay securely with Razorpay." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="assets/style.css" />
+<!-- Razorpay Checkout SDK -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<style>
+  /* ── Layout ── */
+  .booking-layout { display:grid; grid-template-columns:1fr 400px; gap:28px; padding:40px 6%; max-width:1100px; margin:0 auto; align-items:start; }
+  .booking-sidebar { position:sticky; top:88px; }
+
+  /* ── Steps Progress Bar ── */
+  .steps-bar {
+    display:flex; align-items:center; gap:0;
+    background:#fff; border-radius:14px; padding:20px 28px;
+    border:1px solid #e5e7eb; margin-bottom:24px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.05);
+  }
+  .step-item { display:flex; align-items:center; gap:10px; flex:1; }
+  .step-item:last-child { flex:0; }
+  .step-circle {
+    width:34px; height:34px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:0.85rem; font-weight:800;
+    background:#f1f3f5; color:#9ca3af; border:2px solid #e5e7eb;
+    transition:all .3s;
+  }
+  .step-item.done   .step-circle { background:#16a34a; color:#fff; border-color:#16a34a; }
+  .step-item.active .step-circle { background:#ff6a3d; color:#fff; border-color:#ff6a3d; }
+  .step-label { font-size:0.82rem; font-weight:600; color:#9ca3af; transition:color .3s; }
+  .step-item.done   .step-label,
+  .step-item.active .step-label { color:#14213d; }
+  .step-connector { flex:1; height:2px; background:#e5e7eb; margin:0 8px; border-radius:2px; transition:background .3s; }
+  .step-connector.done { background:#16a34a; }
+
+  /* ── Vehicle Preview ── */
+  .vehicle-preview { background:#fff; border-radius:16px; border:1px solid #e5e7eb; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.06); margin-bottom:22px; }
+  .vehicle-preview-thumb { height:160px; display:flex; align-items:center; justify-content:center; font-size:5rem; background:linear-gradient(135deg,#fff3ec,#fce7dc); position:relative; }
+  .vehicle-preview-body { padding:18px 22px; }
+  .vehicle-preview-name { font-size:1.3rem; font-weight:800; margin-bottom:4px; }
+  .vehicle-preview-meta { color:#6b7280; font-size:0.85rem; display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+  .vehicle-preview-specs { display:flex; gap:8px; flex-wrap:wrap; }
+
+  /* ── Detail Section ── */
+  .detail-section { background:#fff; border-radius:14px; border:1px solid #e5e7eb; padding:22px; margin-bottom:18px; }
+  .detail-section h3 { font-size:0.95rem; font-weight:800; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+  .detail-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #f1f3f5; font-size:0.88rem; }
+  .detail-row:last-child { border:none; }
+  .detail-row .label { color:#6b7280; }
+  .detail-row .val   { font-weight:600; }
+
+  /* ── Sidebar card ── */
+  .booking-form-card { background:#fff; border-radius:16px; border:1px solid #e5e7eb; padding:26px; box-shadow:0 4px 20px rgba(0,0,0,0.08); }
+  .booking-form-card h2 { font-size:1.1rem; font-weight:800; margin-bottom:4px; }
+  .price-tag { font-size:1.5rem; font-weight:900; color:#ff6a3d; margin-bottom:18px; }
+  .price-tag small { font-size:0.78rem; font-weight:400; color:#6b7280; }
+  .date-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .price-breakdown { background:#f7f8fa; border-radius:10px; padding:14px 16px; margin:14px 0; }
+  .pb-row  { display:flex; justify-content:space-between; font-size:0.85rem; color:#6b7280; padding:3px 0; }
+  .pb-total{ display:flex; justify-content:space-between; font-size:1rem; font-weight:800; color:#14213d; padding-top:10px; border-top:1px solid #e5e7eb; margin-top:6px; }
+
+  /* ── Policy chips ── */
+  .policy-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .policy-chip { background:#f7f8fa; border-radius:10px; padding:12px; text-align:center; }
+  .policy-chip .pc-icon  { font-size:1.3rem; margin-bottom:5px; }
+  .policy-chip .pc-title { font-size:0.77rem; font-weight:700; color:#14213d; margin-bottom:2px; }
+  .policy-chip .pc-desc  { font-size:0.7rem; color:#6b7280; }
+
+  /* ── Payment step ── */
+  .pay-summary { background:#f7f8fa; border-radius:12px; padding:18px; margin-bottom:18px; }
+  .pay-summary-row { display:flex; justify-content:space-between; font-size:0.88rem; padding:5px 0; }
+  .pay-summary-row.total { font-weight:800; font-size:1rem; color:#ff6a3d; border-top:1px solid #e5e7eb; padding-top:10px; margin-top:6px; }
+  .razorpay-badge { display:flex; align-items:center; justify-content:center; gap:8px; margin-top:14px; color:#6b7280; font-size:0.78rem; }
+  .rzp-logo { background:#072654; color:#fff; padding:2px 8px; border-radius:4px; font-size:0.7rem; font-weight:800; letter-spacing:0.5px; }
+
+  /* ── Success state ── */
+  #successPanel { display:none; text-align:center; padding:32px 20px; }
+  .success-icon  { font-size:3.5rem; margin-bottom:14px; }
+  .success-title { font-size:1.4rem; font-weight:800; margin-bottom:8px; color:#16a34a; }
+  .success-sub   { color:#6b7280; font-size:0.92rem; margin-bottom:22px; }
+  .confetti-row  { display:flex; justify-content:center; gap:8px; font-size:1.6rem; margin-bottom:20px; }
+
+  /* ── Error state ── */
+  #notFoundPanel { display:none; padding:80px 6%; text-align:center; }
+
+  /* ── Animations ── */
+  @keyframes pulse-green { 0%,100%{box-shadow:0 0 0 0 rgba(22,163,74,0.4);} 50%{box-shadow:0 0 0 8px rgba(22,163,74,0);} }
+  .pulsing { animation:pulse-green 1.5s ease infinite; }
+
+  @media(max-width:900px) { .booking-layout{grid-template-columns:1fr;} .booking-sidebar{position:static;} }
+  @media(max-width:480px) { .date-row{grid-template-columns:1fr;} .policy-grid{grid-template-columns:1fr 1fr;} }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo"><a href="index.html">Ride<span>India</span> 🚗</a></div>
+  <nav class="site-nav" id="siteNav">
+    <a href="index.html">Home</a>
+    <a href="vehicles.html">Vehicles</a>
+    <a href="profile.html" id="navProfile" style="display:none;">Profile</a>
+    <a href="login.html" id="navLogin">Sign In</a>
+  </nav>
+  <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+</header>
+
+<section class="page-hero">
+  <h1>Book Your Ride 🚀</h1>
+  <p id="heroSub">Loading vehicle details…</p>
+</section>
+
+<!-- ── Not Found ─────────────────────────────────────────────────────────── -->
+<div id="notFoundPanel">
+  <div style="font-size:3rem;margin-bottom:16px;">😕</div>
+  <h2 style="font-size:1.4rem;font-weight:800;margin-bottom:8px;">Vehicle Not Found</h2>
+  <p style="color:#6b7280;margin-bottom:20px;">This vehicle is unavailable or no longer listed.</p>
+  <a href="vehicles.html" class="btn btn-primary">Browse Vehicles</a>
+</div>
+
+<!-- ── Main Booking Layout ────────────────────────────────────────────────── -->
+<div class="booking-layout" id="bookingLayout" style="display:none;">
+
+  <!-- LEFT: Vehicle info + steps -->
+  <main>
+
+    <!-- Steps progress -->
+    <div class="steps-bar" id="stepsBar">
+      <div class="step-item active" id="step1">
+        <div class="step-circle">1</div>
+        <div class="step-label">Select Dates</div>
+      </div>
+      <div class="step-connector" id="conn1"></div>
+      <div class="step-item" id="step2">
+        <div class="step-circle">2</div>
+        <div class="step-label">Review &amp; Pay</div>
+      </div>
+      <div class="step-connector" id="conn2"></div>
+      <div class="step-item" id="step3">
+        <div class="step-circle">✓</div>
+        <div class="step-label">Confirmed</div>
+      </div>
+    </div>
+
+    <!-- Vehicle card -->
+    <div class="vehicle-preview">
+      <div class="vehicle-preview-thumb" id="vThumb">🚗</div>
+      <div class="vehicle-preview-body">
+        <div class="vehicle-preview-name" id="vName">—</div>
+        <div class="vehicle-preview-meta" id="vMeta"></div>
+        <div class="vehicle-preview-specs" id="vSpecs"></div>
+      </div>
+    </div>
+
+    <!-- Specs -->
+    <div class="detail-section">
+      <h3>⚙️ Specifications</h3>
+      <div class="detail-row"><span class="label">Type</span><span class="val" id="dType">—</span></div>
+      <div class="detail-row"><span class="label">Fuel</span><span class="val" id="dFuel">—</span></div>
+      <div class="detail-row"><span class="label">Transmission</span><span class="val" id="dTrans">—</span></div>
+      <div class="detail-row"><span class="label">Seats</span><span class="val" id="dSeats">—</span></div>
+      <div class="detail-row"><span class="label">City</span><span class="val" id="dCity">—</span></div>
+      <div class="detail-row"><span class="label">Rate</span><span class="val" id="dRate">—</span></div>
+    </div>
+
+    <!-- Policies -->
+    <div class="detail-section">
+      <h3>📋 Rental Policies</h3>
+      <div class="policy-grid">
+        <div class="policy-chip"><div class="pc-icon">🛡️</div><div class="pc-title">Insurance</div><div class="pc-desc">Basic coverage included</div></div>
+        <div class="policy-chip"><div class="pc-icon">⛽</div><div class="pc-title">Fuel Policy</div><div class="pc-desc">Return same level</div></div>
+        <div class="policy-chip"><div class="pc-icon">🔄</div><div class="pc-title">Free Cancel</div><div class="pc-desc">Before payment only</div></div>
+        <div class="policy-chip"><div class="pc-icon">🪪</div><div class="pc-title">Valid DL</div><div class="pc-desc">Required at pickup</div></div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- RIGHT: Booking Sidebar -->
+  <aside class="booking-sidebar">
+
+    <!-- ── STEP 1: Date selector ────────────────────────────────────────── -->
+    <div class="booking-form-card" id="step1Panel">
+      <h2>Reserve This Vehicle</h2>
+      <div class="price-tag" id="priceTag">₹—<small> /day</small></div>
+
+      <div id="dateError" class="alert alert-error" style="display:none;"></div>
+
+      <div class="date-row">
+        <div class="form-group">
+          <label class="form-label">📅 Pickup Date</label>
+          <input type="date" class="form-input" id="startDate" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">📅 Return Date</label>
+          <input type="date" class="form-input" id="endDate" />
+        </div>
+      </div>
+
+      <div class="price-breakdown" id="priceBreakdown" style="display:none;">
+        <div class="pb-row"><span>₹<span id="pbRate">—</span> × <span id="pbDays">—</span> days</span><span>₹<span id="pbSub">—</span></span></div>
+        <div class="pb-row"><span>Service fee</span><span>₹0</span></div>
+        <div class="pb-total"><span>Total</span><span>₹<span id="pbTotal">—</span></span></div>
+      </div>
+
+      <button class="btn btn-primary btn-full btn-lg" id="proceedBtn" onclick="proceedToPayment()">
+        Proceed to Payment →
+      </button>
+      <p style="text-align:center;margin-top:10px;font-size:0.78rem;color:#9ca3af;">
+        🔒 Secure checkout via Razorpay
+      </p>
+    </div>
+
+    <!-- ── STEP 2: Payment review ───────────────────────────────────────── -->
+    <div class="booking-form-card" id="step2Panel" style="display:none;">
+      <h2>Payment Summary</h2>
+      <p style="color:#6b7280;font-size:0.85rem;margin-bottom:16px;">Review your booking before paying</p>
+
+      <div id="payError" class="alert alert-error" style="display:none;"></div>
+
+      <div class="pay-summary" id="paySummary">
+        <div class="pay-summary-row"><span>Vehicle</span><span id="ps-vehicle">—</span></div>
+        <div class="pay-summary-row"><span>Pickup</span><span id="ps-pickup">—</span></div>
+        <div class="pay-summary-row"><span>Return</span><span id="ps-return">—</span></div>
+        <div class="pay-summary-row"><span>Duration</span><span id="ps-days">—</span></div>
+        <div class="pay-summary-row total"><span>Total Amount</span><span id="ps-total">—</span></div>
+      </div>
+
+      <button class="btn btn-primary btn-full btn-lg pulsing" id="payBtn" onclick="openRazorpay()">
+        💳 Pay Now
+      </button>
+      <button class="btn btn-outline btn-full" style="margin-top:10px;" onclick="backToStep1()">
+        ← Change Dates
+      </button>
+
+      <div class="razorpay-badge">
+        <span class="rzp-logo">razorpay</span>
+        <span>100% Secure · UPI · Cards · NetBanking</span>
+      </div>
+    </div>
+
+    <!-- ── STEP 3: Success ──────────────────────────────────────────────── -->
+    <div class="booking-form-card" id="step3Panel" style="display:none;">
+      <div id="successPanel" style="display:block;">
+        <div class="confetti-row">🎊 🎉 🥳</div>
+        <div class="success-icon">✅</div>
+        <div class="success-title">Booking Confirmed!</div>
+        <div class="success-sub" id="successMsg">Your ride is booked and confirmed.</div>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;margin-bottom:18px;text-align:left;">
+          <div style="font-size:0.82rem;color:#6b7280;margin-bottom:4px;">Payment ID</div>
+          <div style="font-size:0.9rem;font-weight:700;color:#14213d;" id="paymentIdDisplay">—</div>
+        </div>
+        <a href="profile.html" class="btn btn-primary btn-full">📋 View My Bookings</a>
+        <a href="vehicles.html" class="btn btn-outline btn-full" style="margin-top:10px;">Browse More Rides</a>
+      </div>
+    </div>
+
+  </aside>
+</div>
+
+<footer class="site-footer" style="margin-top:40px;">
+  <div class="footer-bottom"><p><strong>RideIndia</strong> — © 2026 All rights reserved.</p></div>
+</footer>
+<div id="toast-container"></div>
+
+<script>
+  const API = '';
+  let vehicle      = null;
+  let currentUser  = null;
+  let currentStep  = 1;
+  let pendingBookingId = null;
+
+  // ── Init ────────────────────────────────────────────────────────────────────
+  async function init() {
+    const id = new URLSearchParams(window.location.search).get('id');
+    if (!id) { showNotFound(); return; }
+
+    // Auth check
+    try {
+      const r = await fetch(`${API}/api/auth/me`, { credentials: 'include' });
+      if (r.ok) {
+        const { user } = await r.json();
+        currentUser = user;
+        document.getElementById('navProfile').style.display = 'inline';
+        document.getElementById('navLogin').style.display   = 'none';
+      }
+    } catch {}
+
+    // Load vehicle
+    try {
+      const r = await fetch(`${API}/api/vehicles/${id}`);
+      if (!r.ok) { showNotFound(); return; }
+      vehicle = (await r.json()).vehicle;
+      renderVehicle();
+    } catch { showNotFound(); }
+  }
+
+  function showNotFound() {
+    document.getElementById('notFoundPanel').style.display = 'block';
+  }
+
+  // ── Render vehicle details ───────────────────────────────────────────────────
+  function renderVehicle() {
+    document.title = `Book ${vehicle.name} — RideIndia`;
+    document.getElementById('heroSub').textContent = `${vehicle.name} · ${vehicle.city}`;
+
+    document.getElementById('vThumb').textContent = vehicle.icon || '🚗';
+    document.getElementById('vName').textContent  = vehicle.name;
+    document.getElementById('vMeta').innerHTML    = `<span>📍 ${vehicle.city}</span><span>🚗 ${vehicle.type}</span><span>⛽ ${vehicle.fuel||'Petrol'}</span>`;
+
+    const specs = [vehicle.seats ? `${vehicle.seats} Seats` : null, vehicle.fuel||'Petrol', vehicle.transmission||'Manual'].filter(Boolean);
+    document.getElementById('vSpecs').innerHTML = specs.map(s => `<span class="spec-tag">${s}</span>`).join('');
+
+    document.getElementById('dType').textContent  = vehicle.type;
+    document.getElementById('dFuel').textContent  = vehicle.fuel || 'Petrol';
+    document.getElementById('dTrans').textContent = vehicle.transmission || 'Manual';
+    document.getElementById('dSeats').textContent = vehicle.seats ? vehicle.seats + ' Seats' : '—';
+    document.getElementById('dCity').textContent  = vehicle.city;
+    document.getElementById('dRate').textContent  = `₹${Number(vehicle.price_day).toLocaleString('en-IN')} / day`;
+    document.getElementById('priceTag').innerHTML = `₹${Number(vehicle.price_day).toLocaleString('en-IN')}<small> /day</small>`;
+
+    // Default dates
+    const today = new Date().toISOString().split('T')[0];
+    const tom   = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    document.getElementById('startDate').min = today;
+    document.getElementById('startDate').value = today;
+    document.getElementById('endDate').min   = tom;
+    document.getElementById('endDate').value = tom;
+
+    updateBreakdown();
+    document.getElementById('bookingLayout').style.display = 'grid';
+  }
+
+  // ── Price breakdown live update ──────────────────────────────────────────────
+  function updateBreakdown() {
+    if (!vehicle) return;
+    const s = new Date(document.getElementById('startDate').value);
+    const e = new Date(document.getElementById('endDate').value);
+    if (isNaN(s)||isNaN(e)||e<=s) { document.getElementById('priceBreakdown').style.display='none'; return; }
+    const days  = Math.ceil((e-s)/(86400000));
+    const total = days * vehicle.price_day;
+    document.getElementById('pbRate').textContent  = Number(vehicle.price_day).toLocaleString('en-IN');
+    document.getElementById('pbDays').textContent  = days;
+    document.getElementById('pbSub').textContent   = Number(total).toLocaleString('en-IN');
+    document.getElementById('pbTotal').textContent = Number(total).toLocaleString('en-IN');
+    document.getElementById('priceBreakdown').style.display = 'block';
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('startDate').addEventListener('change', () => {
+      const s   = document.getElementById('startDate').value;
+      const tom = new Date(new Date(s).getTime()+86400000).toISOString().split('T')[0];
+      document.getElementById('endDate').min = tom;
+      if (document.getElementById('endDate').value <= s) document.getElementById('endDate').value = tom;
+      updateBreakdown();
+    });
+    document.getElementById('endDate').addEventListener('change', updateBreakdown);
+  });
+
+  // ── Step management ──────────────────────────────────────────────────────────
+  function setStep(n) {
+    currentStep = n;
+    // Circles
+    [1,2,3].forEach(i => {
+      const el = document.getElementById(`step${i}`);
+      el.classList.remove('active','done');
+      if (i < n) el.classList.add('done');
+      else if (i === n) el.classList.add('active');
+    });
+    // Connectors
+    document.getElementById('conn1').classList.toggle('done', n > 1);
+    document.getElementById('conn2').classList.toggle('done', n > 2);
+    // Panels
+    document.getElementById('step1Panel').style.display = n===1 ? 'block' : 'none';
+    document.getElementById('step2Panel').style.display = n===2 ? 'block' : 'none';
+    document.getElementById('step3Panel').style.display = n===3 ? 'block' : 'none';
+  }
+
+  function backToStep1() { setStep(1); }
+
+  // ── STEP 1 → 2: Validate dates, fill summary ────────────────────────────────
+  function proceedToPayment() {
+    const errEl = document.getElementById('dateError');
+    if (!currentUser) {
+      window.location.href = `login.html?next=${encodeURIComponent(window.location.href)}`;
+      return;
+    }
+    const s = document.getElementById('startDate').value;
+    const e = document.getElementById('endDate').value;
+    if (!s || !e) { errEl.textContent='Please select pickup and return dates.'; errEl.style.display='block'; return; }
+    if (e <= s)   { errEl.textContent='Return date must be after pickup date.'; errEl.style.display='block'; return; }
+    errEl.style.display = 'none';
+
+    const days  = Math.ceil((new Date(e)-new Date(s))/86400000);
+    const total = days * vehicle.price_day;
+    const fmtDate = d => new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+
+    document.getElementById('ps-vehicle').textContent = `${vehicle.icon} ${vehicle.name}`;
+    document.getElementById('ps-pickup').textContent  = fmtDate(s);
+    document.getElementById('ps-return').textContent  = fmtDate(e);
+    document.getElementById('ps-days').textContent    = `${days} day${days>1?'s':''}`;
+    document.getElementById('ps-total').textContent   = `₹${Number(total).toLocaleString('en-IN')}`;
+
+    setStep(2);
+    showToast('Review your booking and pay 💳');
+  }
+
+  // ── STEP 2 → Pay: Create Razorpay order, open checkout ──────────────────────
+  async function openRazorpay() {
+    const errEl = document.getElementById('payError');
+    errEl.style.display = 'none';
+    const btn = document.getElementById('payBtn');
+    btn.textContent = '⏳ Preparing payment…'; btn.disabled = true;
+
+    try {
+      // 1. Create order on backend
+      const res  = await fetch(`${API}/api/payments/create-order`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          vehicle_id: vehicle._id || vehicle.id,
+          start_date: document.getElementById('startDate').value,
+          end_date:   document.getElementById('endDate').value,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        errEl.textContent = data.error || 'Failed to create order. Try again.';
+        errEl.style.display = 'block';
+        btn.textContent = '💳 Pay Now'; btn.disabled = false;
+        return;
+      }
+
+      pendingBookingId = data.booking_id;
+
+      // 2. Open Razorpay checkout
+      const options = {
+        key:         data.key,
+        amount:      data.amount,
+        currency:    data.currency,
+        name:        'RideIndia',
+        description: `${data.vehicle.name} — ${data.days} day${data.days>1?'s':''}`,
+        order_id:    data.order_id,
+        image:       '',
+        prefill: {
+          name:  currentUser?.name  || '',
+          email: currentUser?.email || '',
+          contact: currentUser?.phone || '',
+        },
+        theme: { color: '#ff6a3d' },
+        modal: {
+          backdropclose: false,
+          ondismiss: async () => {
+            // User closed modal without paying — cancel the pending booking
+            await fetch(`${API}/api/payments/cancel-order`, {
+              method:'POST', credentials:'include',
+              headers:{'Content-Type':'application/json'},
+              body: JSON.stringify({ booking_id: pendingBookingId }),
+            });
+            showToast('Payment cancelled. Your booking was not confirmed.','error');
+            btn.textContent = '💳 Pay Now'; btn.disabled = false;
+          },
+        },
+        handler: async (response) => {
+          // 3. Verify payment on backend
+          btn.textContent = '⏳ Verifying payment…';
+          try {
+            const vRes  = await fetch(`${API}/api/payments/verify`, {
+              method:'POST', credentials:'include',
+              headers:{'Content-Type':'application/json'},
+              body: JSON.stringify({
+                razorpay_order_id:   response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature:  response.razorpay_signature,
+                booking_id:          pendingBookingId,
+              }),
+            });
+            const vData = await vRes.json();
+            if (!vRes.ok) {
+              errEl.textContent = vData.error || 'Payment verification failed.';
+              errEl.style.display = 'block';
+              btn.textContent = '💳 Pay Now'; btn.disabled = false;
+              return;
+            }
+            // 4. Show success
+            document.getElementById('successMsg').textContent =
+              `${vData.booking.vehicle_name} booked from ${vData.booking.start_date} to ${vData.booking.end_date}.`;
+            document.getElementById('paymentIdDisplay').textContent = vData.booking.payment_id || response.razorpay_payment_id;
+            setStep(3);
+            showToast('🎉 Booking confirmed! Enjoy your ride!', 'success');
+          } catch {
+            errEl.textContent = 'Network error during verification. Contact support.';
+            errEl.style.display = 'block';
+            btn.textContent = '💳 Pay Now'; btn.disabled = false;
+          }
+        },
+      };
+
+      const rzp = new Razorpay(options);
+      rzp.open();
+
+    } catch (err) {
+      errEl.textContent = 'Failed to connect. Please try again.';
+      errEl.style.display = 'block';
+      btn.textContent = '💳 Pay Now'; btn.disabled = false;
+    }
+  }
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  function showToast(msg, type='') {
+    const t = document.createElement('div');
+    t.className = `toast${type ? ' toast-'+type : ''}`;
+    t.textContent = msg;
+    document.getElementById('toast-container').appendChild(t);
+    setTimeout(() => t.remove(), 4000);
+  }
+
+  document.getElementById('hamburger').addEventListener('click', () =>
+    document.getElementById('siteNav').classList.toggle('open'));
+
+  init();
+</script>
+</body>
+</html>

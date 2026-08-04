@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sign In / Register — RideIndia</title>
+<meta name="description" content="Sign in or create a RideIndia account to book cars, bikes, and scooters across India." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="assets/style.css" />
+<style>
+  body { background: linear-gradient(135deg, #14213d 0%, #1f3a63 100%); min-height: 100vh; display: flex; flex-direction: column; }
+  .auth-container { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
+  .auth-card { background: #fff; border-radius: 20px; padding: 36px 40px; max-width: 440px; width: 100%; box-shadow: 0 24px 64px rgba(0,0,0,0.4); }
+  .auth-logo { text-align: center; margin-bottom: 28px; }
+  .auth-logo .logo { font-size: 1.6rem; }
+  .auth-logo p { color: #6b7280; font-size: 0.9rem; margin-top: 6px; }
+  .tab-row { display: flex; background: #f7f8fa; border-radius: 10px; padding: 4px; margin-bottom: 28px; gap: 4px; }
+  .tab-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all .2s; background: transparent; color: #6b7280; }
+  .tab-btn.active { background: #fff; color: #14213d; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+  .auth-panel { display: none; }
+  .auth-panel.active { display: block; }
+  .divider { display: flex; align-items: center; gap: 10px; margin: 20px 0; color: #6b7280; font-size: 0.82rem; }
+  .divider::before, .divider::after { content:''; flex:1; height:1px; background:#e5e7eb; }
+  .social-btn { width: 100%; padding: 11px; border: 1.5px solid #e5e7eb; border-radius: 10px; background: #fff; font-weight: 600; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: border-color .2s; }
+  .social-btn:hover { border-color: #ff6a3d; }
+  .forgot-link { font-size: 0.82rem; color: #ff6a3d; float: right; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo"><a href="index.html">Ride<span>India</span> 🚗</a></div>
+  <nav class="site-nav" id="siteNav">
+    <a href="index.html">Home</a>
+    <a href="vehicles.html">Vehicles</a>
+    <a href="login.html" class="active">Sign In</a>
+  </nav>
+  <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+</header>
+
+<div class="auth-container">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="logo">Ride<span style="color:#14213d">India</span> 🚗</div>
+      <p>Your self-drive adventure starts here</p>
+    </div>
+
+    <div class="tab-row">
+      <button class="tab-btn active" id="loginTab" onclick="switchTab('login')">Sign In</button>
+      <button class="tab-btn" id="registerTab" onclick="switchTab('register')">Register</button>
+    </div>
+
+    <!-- Sign In -->
+    <div class="auth-panel active" id="loginPanel">
+      <div id="loginError" class="alert alert-error" style="display:none;"></div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input type="email" class="form-input" id="loginEmail" placeholder="you@example.com" autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password <a href="#" class="forgot-link">Forgot?</a></label>
+        <input type="password" class="form-input" id="loginPassword" placeholder="Your password" autocomplete="current-password" />
+      </div>
+      <button class="btn btn-primary btn-full btn-lg" onclick="doLogin()" id="loginBtn">Sign In →</button>
+      <p style="text-align:center;margin-top:16px;font-size:0.85rem;color:#6b7280;">
+        No account? <a href="#" onclick="switchTab('register')" style="color:#ff6a3d;font-weight:600;">Create one free</a>
+      </p>
+      <div class="divider">or continue with</div>
+      <button class="social-btn" onclick="adminDemo()">🔑 Admin Demo Login</button>
+    </div>
+
+    <!-- Register -->
+    <div class="auth-panel" id="registerPanel">
+      <div id="regError" class="alert alert-error" style="display:none;"></div>
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input type="text" class="form-input" id="regName" placeholder="Priya Sharma" autocomplete="name" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input type="email" class="form-input" id="regEmail" placeholder="you@example.com" autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone (optional)</label>
+        <input type="tel" class="form-input" id="regPhone" placeholder="9876543210" autocomplete="tel" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" class="form-input" id="regPassword" placeholder="Min. 6 characters" autocomplete="new-password" />
+      </div>
+      <button class="btn btn-primary btn-full btn-lg" onclick="doRegister()" id="registerBtn">Create Account →</button>
+      <p style="text-align:center;margin-top:16px;font-size:0.85rem;color:#6b7280;">
+        Already have an account? <a href="#" onclick="switchTab('login')" style="color:#ff6a3d;font-weight:600;">Sign in</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+  const API = '';
+
+  // Check if already logged in
+  (async () => {
+    try {
+      const res = await fetch(`${API}/api/auth/me`, { credentials: 'include' });
+      if (res.ok) { const { user } = await res.json(); redirect(user); }
+    } catch {}
+    // Check if #register hash
+    if (location.hash === '#register') switchTab('register');
+  })();
+
+  function redirect(user) {
+    window.location.href = user.role === 'admin' ? 'admin.html' : 'profile.html';
+  }
+
+  function switchTab(tab) {
+    document.getElementById('loginTab').classList.toggle('active', tab==='login');
+    document.getElementById('registerTab').classList.toggle('active', tab==='register');
+    document.getElementById('loginPanel').classList.toggle('active', tab==='login');
+    document.getElementById('registerPanel').classList.toggle('active', tab==='register');
+  }
+
+  async function doLogin() {
+    const email    = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errEl    = document.getElementById('loginError');
+    if (!email || !password) { errEl.textContent='Please enter email and password.'; errEl.style.display='block'; return; }
+    errEl.style.display='none';
+    const btn = document.getElementById('loginBtn');
+    btn.textContent='Signing in…'; btn.disabled=true;
+    try {
+      const res  = await fetch(`${API}/api/auth/login`, { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email,password}) });
+      const data = await res.json();
+      if (!res.ok) { errEl.textContent=data.error||'Login failed.'; errEl.style.display='block'; btn.textContent='Sign In →'; btn.disabled=false; return; }
+      showToast('Welcome back, '+data.user.name.split(' ')[0]+'! 👋','success');
+      setTimeout(() => redirect(data.user), 800);
+    } catch { errEl.textContent='Network error.'; errEl.style.display='block'; btn.textContent='Sign In →'; btn.disabled=false; }
+  }
+
+  async function doRegister() {
+    const name     = document.getElementById('regName').value.trim();
+    const email    = document.getElementById('regEmail').value.trim();
+    const phone    = document.getElementById('regPhone').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const errEl    = document.getElementById('regError');
+    if (!name||!email||!password) { errEl.textContent='Name, email and password are required.'; errEl.style.display='block'; return; }
+    if (password.length < 6) { errEl.textContent='Password must be at least 6 characters.'; errEl.style.display='block'; return; }
+    errEl.style.display='none';
+    const btn=document.getElementById('registerBtn'); btn.textContent='Creating…'; btn.disabled=true;
+    try {
+      const res  = await fetch(`${API}/api/auth/register`, { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name,email,phone,password}) });
+      const data = await res.json();
+      if (!res.ok) { errEl.textContent=data.error||'Registration failed.'; errEl.style.display='block'; btn.textContent='Create Account →'; btn.disabled=false; return; }
+      showToast('Account created! Welcome, '+data.user.name.split(' ')[0]+'! 🎉','success');
+      setTimeout(() => redirect(data.user), 800);
+    } catch { errEl.textContent='Network error.'; errEl.style.display='block'; btn.textContent='Create Account →'; btn.disabled=false; }
+  }
+
+  async function adminDemo() {
+    document.getElementById('loginEmail').value = 'admin@rideindia.com';
+    document.getElementById('loginPassword').value = 'admin123';
+    doLogin();
+  }
+
+  // Enter key support
+  document.addEventListener('keydown', e => { if(e.key==='Enter') { const p=document.getElementById('loginPanel'); if(p.classList.contains('active')) doLogin(); else doRegister(); } });
+
+  function showToast(msg,type='') { const t=document.createElement('div'); t.className=`toast${type?' toast-'+type:''}`; t.textContent=msg; document.getElementById('toast-container').appendChild(t); setTimeout(()=>t.remove(),3000); }
+
+  document.getElementById('hamburger').addEventListener('click',()=>document.getElementById('siteNav').classList.toggle('open'));
+</script>
+</body>
+</html>

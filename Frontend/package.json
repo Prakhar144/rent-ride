@@ -1,0 +1,13 @@
+{
+  "name": "rideindia-frontend",
+  "version": "1.0.0",
+  "description": "RideIndia frontend — self-drive vehicle rental",
+  "scripts": {
+    "dev": "vite --port 5173 --open",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  }
+}

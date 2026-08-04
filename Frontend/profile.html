@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>My Profile — RideIndia</title>
+<meta name="description" content="View your RideIndia profile and booking history." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="assets/style.css" />
+<!-- Razorpay Checkout SDK -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<style>
+  /* ── Layout ── */
+  .profile-layout { display:grid; grid-template-columns:280px 1fr; gap:28px; padding:40px 6%; max-width:1200px; margin:0 auto; align-items:start; }
+  .profile-card { background:#fff; border-radius:16px; border:1px solid #e5e7eb; padding:28px; text-align:center; position:sticky; top:88px; }
+  .avatar { width:80px; height:80px; border-radius:50%; background:linear-gradient(135deg,#ff6a3d,#e2531f); display:flex; align-items:center; justify-content:center; font-size:2rem; font-weight:800; color:#fff; margin:0 auto 14px; }
+  .profile-name { font-size:1.2rem; font-weight:800; margin-bottom:4px; }
+  .profile-email { color:#6b7280; font-size:0.85rem; margin-bottom:6px; }
+  .profile-since { font-size:0.78rem; color:#9ca3af; margin-bottom:20px; }
+  .profile-stat-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
+  .profile-stat { background:#f7f8fa; border-radius:10px; padding:12px 8px; text-align:center; }
+  .profile-stat .n { font-size:1.4rem; font-weight:800; color:#14213d; }
+  .profile-stat .l { font-size:0.72rem; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; }
+
+  /* ── Booking Cards ── */
+  .bookings-section h2 { font-size:1.3rem; font-weight:800; margin-bottom:20px; }
+  .booking-card {
+    background:#fff; border:1.5px solid #e5e7eb; border-radius:14px;
+    padding:18px 20px; margin-bottom:14px;
+    display:flex; gap:16px; align-items:flex-start;
+    transition:box-shadow .2s, border-color .2s, transform .15s;
+    position:relative;
+  }
+  .booking-card.clickable { cursor:pointer; }
+  .booking-card.clickable:hover { box-shadow:0 6px 20px rgba(0,0,0,0.1); transform:translateY(-1px); }
+  .booking-card.awaiting { border-color:#a78bfa; border-style:solid; }
+  .booking-card.awaiting:hover { border-color:#7c3aed; box-shadow:0 6px 20px rgba(124,58,237,0.15); }
+  .pay-pulse {
+    position:absolute; top:14px; right:16px;
+    background:linear-gradient(135deg,#7c3aed,#5b21b6);
+    color:#fff; padding:5px 14px; border-radius:20px;
+    font-size:0.75rem; font-weight:700; letter-spacing:0.3px;
+    display:flex; align-items:center; gap:6px;
+    box-shadow:0 2px 8px rgba(124,58,237,0.4);
+    animation: pulse-purple 2s ease infinite;
+  }
+  @keyframes pulse-purple {
+    0%,100% { box-shadow:0 2px 8px rgba(124,58,237,0.4); }
+    50%      { box-shadow:0 2px 16px rgba(124,58,237,0.7); }
+  }
+  .booking-icon { font-size:2.4rem; min-width:44px; text-align:center; }
+  .booking-info { flex:1; min-width:0; }
+  .booking-name  { font-weight:700; font-size:1rem; margin-bottom:2px; }
+  .booking-meta  { font-size:0.82rem; color:#6b7280; margin-bottom:8px; }
+  .booking-dates { font-size:0.85rem; color:#14213d; margin-bottom:8px; }
+  .booking-footer{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-top:4px; }
+  .booking-price { font-weight:800; color:#ff6a3d; font-size:1rem; }
+
+  /* ── Payment Modal ── */
+  .pay-modal-overlay {
+    display:none; position:fixed; inset:0;
+    background:rgba(0,0,0,0.55); backdrop-filter:blur(4px);
+    z-index:1000; align-items:center; justify-content:center;
+    padding:20px;
+  }
+  .pay-modal-overlay.open { display:flex; }
+  .pay-modal {
+    background:#fff; border-radius:20px; padding:0;
+    max-width:460px; width:100%;
+    box-shadow:0 24px 64px rgba(0,0,0,0.3);
+    animation:slideUp .25s ease;
+    overflow:hidden;
+  }
+  @keyframes slideUp { from{transform:translateY(20px);opacity:0;} to{transform:translateY(0);opacity:1;} }
+  .pay-modal-header {
+    background:linear-gradient(135deg,#14213d,#1f3a63);
+    padding:22px 26px; color:#fff;
+    display:flex; justify-content:space-between; align-items:flex-start;
+  }
+  .pay-modal-header h3 { font-size:1.1rem; font-weight:800; margin-bottom:4px; }
+  .pay-modal-header p  { font-size:0.82rem; color:#94a3b8; }
+  .pay-modal-close {
+    background:rgba(255,255,255,0.15); border:none; color:#fff;
+    width:30px; height:30px; border-radius:50%; cursor:pointer;
+    font-size:1rem; display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; transition:background .2s;
+  }
+  .pay-modal-close:hover { background:rgba(255,255,255,0.3); }
+  .pay-modal-body { padding:24px 26px; }
+  .pay-detail-row { display:flex; justify-content:space-between; font-size:0.88rem; padding:8px 0; border-bottom:1px solid #f1f3f5; }
+  .pay-detail-row:last-of-type { border:none; }
+  .pay-detail-row .lbl { color:#6b7280; }
+  .pay-detail-row .val { font-weight:600; }
+  .pay-total-row { display:flex; justify-content:space-between; padding:12px 16px; background:#fff3ec; border-radius:10px; margin:10px 0 18px; }
+  .pay-total-row .lbl { font-weight:700; color:#14213d; }
+  .pay-total-row .val { font-weight:900; color:#ff6a3d; font-size:1.1rem; }
+  .rzp-badge { display:flex; align-items:center; justify-content:center; gap:8px; margin-top:12px; color:#9ca3af; font-size:0.76rem; }
+  .rzp-logo-sm { background:#072654; color:#fff; padding:2px 6px; border-radius:3px; font-size:0.68rem; font-weight:800; }
+
+  /* ── Success state in modal ── */
+  .pay-success { text-align:center; padding:10px 0 6px; }
+  .pay-success .s-icon { font-size:3rem; margin-bottom:10px; }
+  .pay-success h3 { font-size:1.15rem; font-weight:800; color:#16a34a; margin-bottom:6px; }
+  .pay-success p { color:#6b7280; font-size:0.88rem; margin-bottom:16px; }
+  .pay-id { background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px 14px; font-size:0.82rem; font-weight:700; color:#166534; word-break:break-all; margin-bottom:16px; }
+
+  /* ── Filter buttons active state ── */
+  .filter-btn.active { background:#14213d; color:#fff; border-color:#14213d; }
+
+  @media(max-width:768px) { .profile-layout{grid-template-columns:1fr;} .profile-card{position:static;} }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo"><a href="index.html">Ride<span>India</span> 🚗</a></div>
+  <nav class="site-nav" id="siteNav">
+    <a href="index.html">Home</a>
+    <a href="vehicles.html">Vehicles</a>
+    <a href="profile.html" class="active">Profile</a>
+    <button class="btn btn-outline btn-sm" onclick="doLogout()">Logout</button>
+  </nav>
+  <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+</header>
+
+<section class="page-hero">
+  <h1>My Dashboard</h1>
+  <p>Manage your bookings and account details</p>
+</section>
+
+<div class="profile-layout">
+  <!-- Sidebar -->
+  <aside>
+    <div class="profile-card">
+      <div class="avatar" id="avatarEl">?</div>
+      <div class="profile-name"  id="profileName">Loading…</div>
+      <div class="profile-email" id="profileEmail"></div>
+      <div class="profile-since" id="profileSince"></div>
+      <div class="profile-stat-row">
+        <div class="profile-stat"><div class="n" id="statTotal">—</div><div class="l">Total</div></div>
+        <div class="profile-stat"><div class="n" id="statConfirmed">—</div><div class="l">Confirmed</div></div>
+      </div>
+      <a href="vehicles.html" class="btn btn-primary btn-full">+ New Booking</a>
+      <button class="btn btn-outline btn-full" style="margin-top:10px;" onclick="doLogout()">Logout</button>
+    </div>
+  </aside>
+
+  <!-- Bookings -->
+  <main class="bookings-section">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+      <h2>My Bookings</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm filter-btn active" onclick="filterBookings('',this)">All</button>
+        <button class="btn btn-outline btn-sm filter-btn" onclick="filterBookings('awaiting_payment',this)">⏳ Unpaid</button>
+        <button class="btn btn-outline btn-sm filter-btn" onclick="filterBookings('confirmed',this)">Confirmed</button>
+        <button class="btn btn-outline btn-sm filter-btn" onclick="filterBookings('cancelled',this)">Cancelled</button>
+      </div>
+    </div>
+    <div id="bookingsList"><div class="loading-center"><div class="spinner"></div></div></div>
+  </main>
+</div>
+
+<!-- ── Payment Modal ──────────────────────────────────────────────────────────── -->
+<div class="pay-modal-overlay" id="payModalOverlay" onclick="closePayModal(event)">
+  <div class="pay-modal" id="payModal">
+
+    <!-- Header -->
+    <div class="pay-modal-header">
+      <div>
+        <div style="font-size:1.6rem;margin-bottom:6px;" id="pmIcon">🚗</div>
+        <h3 id="pmTitle">Complete Payment</h3>
+        <p id="pmSub">Secure checkout via Razorpay</p>
+      </div>
+      <button class="pay-modal-close" onclick="closePayModal(null)">✕</button>
+    </div>
+
+    <!-- Body -->
+    <div class="pay-modal-body">
+
+      <!-- Error -->
+      <div id="pmError" class="alert alert-error" style="display:none;margin-bottom:16px;"></div>
+
+      <!-- Booking summary (shown before payment) -->
+      <div id="pmSummary">
+        <div class="pay-detail-row"><span class="lbl">Vehicle</span><span class="val" id="pmVehicle">—</span></div>
+        <div class="pay-detail-row"><span class="lbl">City</span><span class="val" id="pmCity">—</span></div>
+        <div class="pay-detail-row"><span class="lbl">Pickup</span><span class="val" id="pmPickup">—</span></div>
+        <div class="pay-detail-row"><span class="lbl">Return</span><span class="val" id="pmReturn">—</span></div>
+        <div class="pay-detail-row"><span class="lbl">Duration</span><span class="val" id="pmDays">—</span></div>
+        <div class="pay-total-row">
+          <span class="lbl">💳 Total Due</span>
+          <span class="val" id="pmTotal">—</span>
+        </div>
+
+        <button class="btn btn-primary btn-full btn-lg" id="pmPayBtn" onclick="launchRazorpay()">
+          💳 Pay Now
+        </button>
+        <button class="btn btn-outline btn-full" style="margin-top:10px;" onclick="closePayModal(null)">
+          Cancel
+        </button>
+        <div class="rzp-badge">
+          <span class="rzp-logo-sm">razorpay</span>
+          <span>100% Secure · UPI · Cards · NetBanking · Wallets</span>
+        </div>
+      </div>
+
+      <!-- Success state -->
+      <div id="pmSuccess" class="pay-success" style="display:none;">
+        <div class="s-icon">🎉</div>
+        <h3>Payment Successful!</h3>
+        <p>Your booking is now <strong style="color:#16a34a;">Confirmed</strong></p>
+        <div class="pay-id" id="pmPaymentId">—</div>
+        <button class="btn btn-primary btn-full" onclick="closePayModal(null);renderBookings();">
+          ✓ View My Bookings
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer" style="margin-top:40px;">
+  <div class="footer-bottom"><p><strong>RideIndia</strong> — © 2026 All rights reserved.</p></div>
+</footer>
+<div id="toast-container"></div>
+
+<script>
+  const API = '';
+  let allBookings  = [];
+  let currentFilter= '';
+  let currentUser  = null;
+  let payingBookingId = null;
+
+  // ── Init ────────────────────────────────────────────────────────────────────
+  async function init() {
+    try {
+      const r = await fetch(`${API}/api/auth/me`, { credentials:'include' });
+      if (!r.ok) { window.location.href='login.html'; return; }
+      const { user } = await r.json();
+      currentUser = user;
+      renderProfile(user);
+    } catch { window.location.href='login.html'; return; }
+
+    try {
+      const r = await fetch(`${API}/api/bookings/mine`, { credentials:'include' });
+      const data = await r.json();
+      allBookings = data.bookings || [];
+      renderStats();
+      renderBookings();
+    } catch {
+      document.getElementById('bookingsList').innerHTML =
+        '<div class="empty-state"><div class="empty-icon">⚠️</div><h3>Could not load bookings</h3></div>';
+    }
+  }
+
+  function renderProfile(user) {
+    document.getElementById('avatarEl').textContent   = user.name.charAt(0).toUpperCase();
+    document.getElementById('profileName').textContent = user.name;
+    document.getElementById('profileEmail').textContent= user.email;
+    const d = new Date(user.created_at);
+    document.getElementById('profileSince').textContent =
+      'Member since ' + d.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+  }
+
+  function renderStats() {
+    document.getElementById('statTotal').textContent    = allBookings.length;
+    document.getElementById('statConfirmed').textContent= allBookings.filter(b=>b.status==='confirmed').length;
+  }
+
+  function filterBookings(status, btn) {
+    currentFilter = status;
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    renderBookings();
+  }
+
+  function renderBookings() {
+    const list  = document.getElementById('bookingsList');
+    const items = currentFilter ? allBookings.filter(b=>b.status===currentFilter) : allBookings;
+    if (items.length === 0) {
+      list.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div>
+        <h3>${currentFilter ? 'No '+currentFilter.replace('_',' ')+' bookings' : 'No bookings yet'}</h3>
+        <p><a href="vehicles.html" style="color:#ff6a3d;font-weight:600;">Browse vehicles →</a></p></div>`;
+      return;
+    }
+
+    list.innerHTML = items.map(b => {
+      const s = new Date(b.start_date).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+      const e = new Date(b.end_date).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+      const days = Math.ceil((new Date(b.end_date)-new Date(b.start_date))/86400000);
+      const isPending  = b.status === 'awaiting_payment';
+      const canCancel  = b.status === 'awaiting_payment' || b.status === 'confirmed';
+
+      return `
+        <div class="booking-card ${isPending?'awaiting clickable':''}"
+             ${isPending ? `onclick="openPayModal('${b.id}','${b.vehicle_name}','${b.icon||'🚗'}','${b.city}','${s}','${e}','${days}','${b.total_price}')"` : ''}>
+
+          ${isPending ? `<div class="pay-pulse">💳 Tap to Pay</div>` : ''}
+
+          <div class="booking-icon">${b.icon||'🚗'}</div>
+          <div class="booking-info">
+            <div class="booking-name">${b.vehicle_name}</div>
+            <div class="booking-meta">📍 ${b.city} · ${b.type}</div>
+            <div class="booking-dates">📅 ${s} → ${e} <span style="color:#6b7280;">(${days} day${days>1?'s':''})</span></div>
+            <div class="booking-footer">
+              <span class="booking-price">₹${Number(b.total_price).toLocaleString('en-IN')}</span>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span class="badge badge-${b.status}">${b.status.replace('_',' ')}</span>
+                ${isPending
+                  ? `<button class="btn btn-primary btn-sm" style="background:#7c3aed;border-color:#7c3aed;"
+                       onclick="event.stopPropagation();openPayModal('${b.id}','${b.vehicle_name}','${b.icon||'🚗'}','${b.city}','${s}','${e}','${days}','${b.total_price}')">
+                       💳 Pay Now
+                     </button>`
+                  : ''}
+                ${canCancel && !isPending
+                  ? `<button class="btn btn-danger btn-sm" onclick="cancelBooking('${b.id}',event)">Cancel</button>`
+                  : ''}
+                ${isPending
+                  ? `<button class="btn btn-danger btn-sm" onclick="cancelBooking('${b.id}',event)">Cancel</button>`
+                  : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ── Open Payment Modal ───────────────────────────────────────────────────────
+  function openPayModal(bookingId, vehicleName, icon, city, startFmt, endFmt, days, total) {
+    payingBookingId = bookingId;
+
+    document.getElementById('pmIcon').textContent    = icon;
+    document.getElementById('pmTitle').textContent   = vehicleName;
+    document.getElementById('pmVehicle').textContent = `${icon} ${vehicleName}`;
+    document.getElementById('pmCity').textContent    = city;
+    document.getElementById('pmPickup').textContent  = startFmt;
+    document.getElementById('pmReturn').textContent  = endFmt;
+    document.getElementById('pmDays').textContent    = `${days} day${days>1?'s':''}`;
+    document.getElementById('pmTotal').textContent   = `₹${Number(total).toLocaleString('en-IN')}`;
+
+    // Reset state
+    document.getElementById('pmError').style.display   = 'none';
+    document.getElementById('pmSummary').style.display = 'block';
+    document.getElementById('pmSuccess').style.display = 'none';
+    document.getElementById('pmPayBtn').textContent    = '💳 Pay Now';
+    document.getElementById('pmPayBtn').disabled       = false;
+
+    document.getElementById('payModalOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closePayModal(e) {
+    if (e && e.target !== document.getElementById('payModalOverlay')) return;
+    document.getElementById('payModalOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+    // If success just happened, refresh bookings list
+    if (document.getElementById('pmSuccess').style.display === 'block') {
+      init();
+    }
+  }
+
+  // ── Launch Razorpay ──────────────────────────────────────────────────────────
+  async function launchRazorpay() {
+    const errEl = document.getElementById('pmError');
+    const btn   = document.getElementById('pmPayBtn');
+    errEl.style.display = 'none';
+    btn.textContent = '⏳ Preparing…'; btn.disabled = true;
+
+    try {
+      // Get a fresh Razorpay order for this booking
+      const res  = await fetch(`${API}/api/payments/retry-order/${payingBookingId}`, {
+        method:'POST', credentials:'include',
+        headers:{'Content-Type':'application/json'},
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        errEl.textContent   = data.error || 'Failed to initiate payment.';
+        errEl.style.display = 'block';
+        btn.textContent = '💳 Pay Now'; btn.disabled = false;
+        return;
+      }
+
+      const options = {
+        key:         data.key,
+        amount:      data.amount,
+        currency:    data.currency,
+        name:        'RideIndia',
+        description: `${data.vehicle.name} — ${data.days} day${data.days>1?'s':''}`,
+        order_id:    data.order_id,
+        prefill: {
+          name:    currentUser?.name    || '',
+          email:   currentUser?.email   || '',
+          contact: currentUser?.phone   || '',
+        },
+        theme: { color: '#ff6a3d' },
+        modal: {
+          backdropclose: false,
+          ondismiss: () => {
+            showToast('Payment cancelled.','error');
+            btn.textContent = '💳 Pay Now'; btn.disabled = false;
+          },
+        },
+        handler: async (response) => {
+          btn.textContent = '⏳ Verifying…';
+          try {
+            const vRes  = await fetch(`${API}/api/payments/verify`, {
+              method:'POST', credentials:'include',
+              headers:{'Content-Type':'application/json'},
+              body: JSON.stringify({
+                razorpay_order_id:   response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature:  response.razorpay_signature,
+                booking_id:          payingBookingId,
+              }),
+            });
+            const vData = await vRes.json();
+            if (!vRes.ok) {
+              errEl.textContent   = vData.error || 'Verification failed.';
+              errEl.style.display = 'block';
+              btn.textContent = '💳 Pay Now'; btn.disabled = false;
+              return;
+            }
+            // Show success inside modal
+            document.getElementById('pmSummary').style.display = 'none';
+            document.getElementById('pmSuccess').style.display = 'block';
+            document.getElementById('pmPaymentId').textContent = vData.booking.payment_id || response.razorpay_payment_id;
+            // Update local booking list
+            const idx = allBookings.findIndex(b => b.id === payingBookingId || b.id === String(payingBookingId));
+            if (idx !== -1) allBookings[idx].status = 'confirmed';
+            renderStats();
+            showToast('🎉 Payment successful! Booking confirmed!','success');
+          } catch {
+            errEl.textContent   = 'Network error during verification.';
+            errEl.style.display = 'block';
+            btn.textContent = '💳 Pay Now'; btn.disabled = false;
+          }
+        },
+      };
+
+      const rzp = new Razorpay(options);
+      rzp.open();
+
+    } catch {
+      errEl.textContent   = 'Failed to connect. Please try again.';
+      errEl.style.display = 'block';
+      btn.textContent = '💳 Pay Now'; btn.disabled = false;
+    }
+  }
+
+  // ── Cancel Booking ───────────────────────────────────────────────────────────
+  async function cancelBooking(id, evt) {
+    if (evt) evt.stopPropagation();
+    if (!confirm('Cancel this booking?')) return;
+    try {
+      const r = await fetch(`${API}/api/bookings/${id}`, { method:'DELETE', credentials:'include' });
+      if (r.ok) {
+        const idx = allBookings.findIndex(b=>b.id===id||b.id===String(id));
+        if (idx !== -1) allBookings[idx].status = 'cancelled';
+        renderStats(); renderBookings();
+        showToast('Booking cancelled.','success');
+      } else {
+        const d = await r.json(); showToast(d.error||'Failed to cancel.','error');
+      }
+    } catch { showToast('Network error.','error'); }
+  }
+
+  async function doLogout() {
+    await fetch(`${API}/api/auth/logout`,{method:'POST',credentials:'include'});
+    window.location.href='index.html';
+  }
+
+  function showToast(msg,type='') {
+    const t=document.createElement('div');
+    t.className=`toast${type?' toast-'+type:''}`;
+    t.textContent=msg;
+    document.getElementById('toast-container').appendChild(t);
+    setTimeout(()=>t.remove(),4000);
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closePayModal(null);
+  });
+  document.getElementById('hamburger').addEventListener('click',()=>
+    document.getElementById('siteNav').classList.toggle('open'));
+
+  init();
+</script>
+</body>
+</html>
