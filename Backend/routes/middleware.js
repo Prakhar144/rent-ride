@@ -1,14 +1,20 @@
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || 'rideindia_secret_2026';
 
+const { User } = require('../models');
+
 /**
- * Middleware: requires a valid JWT cookie. Attaches req.user = { id, role }.
+ * Middleware: requires a valid JWT cookie and active status.
  */
-function requireAuth(req, res, next) {
+async function requireAuth(req, res, next) {
   const token = req.cookies.token;
   if (!token) return res.status(401).json({ error: 'Authentication required' });
   try {
-    req.user = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(401).json({ error: 'User not found' });
+    if (user.status === 'blocked') return res.status(403).json({ error: 'Your account has been blocked by an administrator.' });
+    req.user = decoded;
     next();
   } catch {
     res.status(401).json({ error: 'Invalid or expired token' });
@@ -18,16 +24,41 @@ function requireAuth(req, res, next) {
 /**
  * Middleware: requires admin role.
  */
-function requireAdmin(req, res, next) {
+async function requireAdmin(req, res, next) {
   const token = req.cookies.token;
   if (!token) return res.status(401).json({ error: 'Authentication required' });
   try {
-    req.user = jwt.verify(token, JWT_SECRET);
-    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admin access required' });
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (decoded.role !== 'admin') return res.status(403).json({ error: 'Admin access required' });
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(401).json({ error: 'User not found' });
+    if (user.status === 'blocked') return res.status(403).json({ error: 'Your account has been blocked by an administrator.' });
+    req.user = decoded;
     next();
   } catch {
     res.status(401).json({ error: 'Invalid or expired token' });
   }
 }
 
-module.exports = { requireAuth, requireAdmin };
+/**
+ * Middleware: requires admin or vendor role.
+ */
+async function requireAdminOrVendor(req, res, next) {
+  const token = req.cookies.token;
+  if (!token) return res.status(401).json({ error: 'Authentication required' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (decoded.role !== 'admin' && decoded.role !== 'vendor') {
+      return res.status(403).json({ error: 'Vendor or Admin access required' });
+    }
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(401).json({ error: 'User not found' });
+    if (user.status === 'blocked') return res.status(403).json({ error: 'Your account has been blocked by an administrator.' });
+    req.user = decoded;
+    next();
+  } catch {
+    res.status(401).json({ error: 'Invalid or expired token' });
+  }
+}
+
+module.exports = { requireAuth, requireAdmin, requireAdminOrVendor };

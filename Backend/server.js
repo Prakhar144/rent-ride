@@ -15,6 +15,7 @@ app.use(cookieParser());
 
 // ─── Serve Static Frontend ────────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, '..', 'Frontend')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
 app.use('/api/auth',     require('./routes/auth'));
@@ -46,6 +47,6 @@ app.use((err, req, res, next) => {
     console.log(`\n🚗  RENT RIDE backend running at http://localhost:${PORT}`);
     console.log(`📦  Database: MongoDB → rentride`);
     console.log(`📁  Serving frontend from ../Frontend`);
-    console.log(`🔑  Admin login: admin@rentride.com / admin123\n`);
+    console.log(`🔑  Admin login: admin@rentride.com / admin@123\n`);
   });
 })();

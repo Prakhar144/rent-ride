@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vendor Panel — RENT RIDE</title>
+<meta name="description" content="RENT RIDE vendor dashboard for managing your vehicles." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="assets/style.css" />
+<style>
+  .admin-layout { display: grid; grid-template-columns: 240px 1fr; min-height: calc(100vh - 68px); }
+  .admin-sidebar { background: #14213d; color: #fff; padding: 28px 0; position: sticky; top: 68px; height: calc(100vh - 68px); overflow-y: auto; }
+  .admin-sidebar .admin-logo { padding: 0 22px 24px; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748b; border-bottom: 1px solid rgba(255,255,255,0.07); margin-bottom: 12px; }
+  .admin-nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 22px; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: #94a3b8; transition: all .2s; border-left: 3px solid transparent; }
+  .admin-nav-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
+  .admin-nav-item.active { background: rgba(255,106,61,0.15); color: #ff6a3d; border-left-color: #ff6a3d; }
+  .admin-nav-item .nav-icon { font-size: 1.1rem; min-width: 20px; }
+  .admin-main { background: #f7f8fa; padding: 32px 36px; overflow-y: auto; }
+  .admin-page { display: none; }
+  .admin-page.active { display: block; }
+  .page-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 6px; }
+  .page-sub { color: #6b7280; font-size: 0.9rem; margin-bottom: 28px; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 24px; margin-bottom: 36px; }
+  .stat-card { background: #fff; border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow-sm); border-top: 4px solid var(--primary); transition: transform var(--transition), box-shadow var(--transition); }
+  .stat-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+  .stat-card.green  { border-top-color: var(--success); }
+  .stat-card.blue   { border-top-color: var(--info); }
+  .stat-card .icon  { font-size: 2rem; margin-bottom: 12px; }
+  .stat-card .value { font-size: 2.2rem; font-weight: 900; color: var(--dark2); line-height: 1; margin-bottom: 6px; letter-spacing: -0.5px; }
+  .stat-card .label { font-size: 0.8rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px; }
+  .section-card { background: #fff; border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow-sm); margin-bottom: 24px; border: 1px solid var(--gray-light); }
+  .section-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px; }
+  .section-card-header h3 { font-size: 1.05rem; font-weight: 800; }
+  /* Vehicle form */
+  .veh-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media(max-width:1100px){.admin-layout{grid-template-columns:1fr;}  .admin-sidebar{position:static;height:auto;display:flex;overflow-x:auto;padding:10px 0;} .admin-nav-item{flex-direction:column;padding:10px 16px;border-left:none;border-bottom:3px solid transparent;font-size:0.78rem;} .admin-nav-item.active{border-bottom-color:#ff6a3d;border-left:none;} .admin-main{padding:20px;}}
+  @media(max-width:600px){.veh-form-grid{grid-template-columns:1fr;} .stats-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo"><a href="index.html">RENT<span>RIDE</span> 🚗</a></div>
+  <nav class="site-nav" id="siteNav">
+    <a href="index.html">Home</a>
+    <a href="vendor.html" class="active">Vendor</a>
+    <button class="btn btn-outline btn-sm" onclick="doLogout()">Logout</button>
+  </nav>
+  <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+</header>
+
+<div class="admin-layout">
+  <!-- Sidebar -->
+  <aside class="admin-sidebar">
+    <div class="admin-logo">Vendor Panel</div>
+    <div class="admin-nav-item active" onclick="showPage('dashboard')"><span class="nav-icon">📊</span> Dashboard</div>
+    <div class="admin-nav-item" onclick="showPage('vehicles')"><span class="nav-icon">🚗</span> My Vehicles</div>
+    <div style="position:absolute;bottom:20px;left:0;right:0;padding:0 22px;" class="admin-nav-end">
+      <button class="btn btn-outline btn-full btn-sm" style="color:#94a3b8;border-color:rgba(255,255,255,0.1);margin-top:16px;" onclick="doLogout()">Logout</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="admin-main">
+
+    <!-- Dashboard -->
+    <div class="admin-page active" id="page-dashboard">
+      <div class="page-title">Vendor Dashboard</div>
+      <div class="page-sub" id="welcomeSub">Welcome back! Manage your fleet here.</div>
+      <div class="stats-grid">
+        <div class="stat-card blue"><div class="icon">🚗</div><div class="value" id="s-vehicles">—</div><div class="label">Total Vehicles Listed</div></div>
+        <div class="stat-card green"><div class="icon">✅</div><div class="value" id="s-available">—</div><div class="label">Available Vehicles</div></div>
+      </div>
+      <div class="section-card">
+        <div class="section-card-header"><h3>Recent Additions</h3><button class="btn btn-outline btn-sm" onclick="showPage('vehicles')">Manage Fleet →</button></div>
+        <div class="table-wrap" id="recentVehicles"><div class="loading-center"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+    <!-- Vehicles -->
+    <div class="admin-page" id="page-vehicles">
+      <div class="page-title">My Vehicles</div>
+      <div class="page-sub">Add, edit, or remove vehicles from your listing.</div>
+
+      <!-- Add Vehicle Form -->
+      <div class="section-card" id="vehicleFormCard">
+        <div class="section-card-header">
+          <h3 id="vehicleFormTitle">Add New Vehicle</h3>
+          <button class="btn btn-outline btn-sm" id="cancelEditBtn" onclick="resetVehicleForm()" style="display:none;">Cancel Edit</button>
+        </div>
+        <div class="veh-form-grid">
+          <div class="form-group"><label class="form-label">Vehicle Name *</label><input type="text" class="form-input" id="vName" placeholder="e.g. Maruti Swift" /></div>
+          <div class="form-group"><label class="form-label">Type *</label><select class="form-select" id="vType"><option value="Car">Car</option><option value="Bike">Bike</option><option value="Scooter">Scooter</option></select></div>
+          <div class="form-group"><label class="form-label">City *</label><select class="form-select" id="vCity"><option value="Delhi">Delhi</option><option value="Mumbai">Mumbai</option><option value="Bangalore">Bangalore</option><option value="Chennai">Chennai</option><option value="Hyderabad">Hyderabad</option><option value="Kolkata">Kolkata</option><option value="Pune">Pune</option><option value="Jaipur">Jaipur</option><option value="Goa">Goa</option><option value="Ahmedabad">Ahmedabad</option></select></div>
+          <div class="form-group"><label class="form-label">Price / Day (₹) *</label><input type="number" class="form-input" id="vPrice" placeholder="1500" min="100" /></div>
+          <div class="form-group"><label class="form-label">Vehicle Image</label><input type="file" class="form-input" id="vImage" accept="image/*" /></div>
+          <div class="form-group"><label class="form-label">Icon (emoji fallback)</label><input type="text" class="form-input" id="vIcon" placeholder="🚗" maxlength="4" /></div>
+          <div class="form-group"><label class="form-label">Seats</label><input type="number" class="form-input" id="vSeats" placeholder="5" min="1" max="10" /></div>
+          <div class="form-group"><label class="form-label">Fuel Type</label><select class="form-select" id="vFuel"><option>Petrol</option><option>Diesel</option><option>Electric</option><option>CNG</option></select></div>
+          <div class="form-group"><label class="form-label">Transmission</label><select class="form-select" id="vTrans"><option>Manual</option><option>Automatic</option></select></div>
+        </div>
+        <div class="form-group"><label class="form-label">Description</label><textarea class="form-input" id="vDesc" rows="2" placeholder="Brief vehicle description…" style="resize:vertical;"></textarea></div>
+        <div id="vehicleFormError" class="alert alert-error" style="display:none;"></div>
+        <button class="btn btn-primary" id="vehicleFormBtn" onclick="submitVehicle()">Add Vehicle</button>
+      </div>
+
+      <!-- Vehicles Table -->
+      <div class="section-card">
+        <div class="section-card-header"><h3 id="vehicleCount">Your Fleet</h3></div>
+        <div class="table-wrap" id="vehiclesTable"><div class="loading-center"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+  const API = '';
+  let vendorVehicles = [], editingVehicleId = null;
+
+  async function init() {
+    // Auth check — must be vendor
+    try {
+      const res = await fetch(`${API}/api/auth/me`, { credentials:'include' });
+      if (!res.ok) { window.location.href='login.html'; return; }
+      const { user } = await res.json();
+      if (user.role !== 'vendor') { window.location.href='profile.html'; return; }
+      document.getElementById('welcomeSub').textContent = `Welcome back, ${user.name.split(' ')[0]}! Manage your fleet here.`;
+    } catch { window.location.href='login.html'; return; }
+
+    loadVendorVehicles();
+  }
+
+  function showPage(page) {
+    document.querySelectorAll('.admin-page').forEach(p=>p.classList.remove('active'));
+    document.getElementById('page-'+page).classList.add('active');
+    document.querySelectorAll('.admin-nav-item').forEach(n=>n.classList.remove('active'));
+    document.querySelectorAll('.admin-nav-item').forEach(n=>{ if(n.textContent.toLowerCase().includes(page.slice(0,4))) n.classList.add('active'); });
+  }
+
+  // ── Vehicles ────────────────────────────────────────────────────────────────
+  async function loadVendorVehicles() {
+    try {
+      const res  = await fetch(`${API}/api/vehicles/vendor/my-vehicles`, { credentials:'include' });
+      const data = await res.json();
+      vendorVehicles = data.vehicles||[];
+      
+      // Update stats
+      document.getElementById('s-vehicles').textContent = vendorVehicles.length;
+      document.getElementById('s-available').textContent = vendorVehicles.filter(v=>v.available).length;
+      
+      document.getElementById('vehicleCount').textContent = `Your Fleet (${vendorVehicles.length} vehicles)`;
+      
+      renderVehiclesTable(vendorVehicles.slice(0, 5), 'recentVehicles', false);
+      renderVehiclesTable(vendorVehicles, 'vehiclesTable', true);
+    } catch {}
+  }
+
+  function renderVehiclesTable(vehicles, containerId, showActions=true) {
+    const wrap = document.getElementById(containerId);
+    if (vehicles.length===0) { wrap.innerHTML='<p style="padding:20px;color:#6b7280;">No vehicles found.</p>'; return; }
+    wrap.innerHTML = `<table>
+      <thead><tr><th>#</th><th>Vehicle</th><th>City</th><th>Type</th><th>Price/Day</th><th>Available</th>${showActions?'<th>Actions</th>':''}</tr></thead>
+      <tbody>${vehicles.map(v=>{
+        const thumb = v.image_url ? `<img src="${API}${v.image_url}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;vertical-align:middle;margin-right:8px;" />` : `${v.icon}`;
+        return `
+        <tr>
+          <td style="color:#6b7280;">${v.id.slice(-6)}</td>
+          <td>${thumb} <strong>${v.name}</strong></td>
+          <td>${v.city}</td>
+          <td>${v.type}</td>
+          <td style="font-weight:700;color:#ff6a3d;">₹${v.price_day}</td>
+          <td><span class="badge ${v.available?'badge-confirmed':'badge-cancelled'}">${v.available?'Yes':'No'}</span></td>
+          ${showActions?`<td style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" onclick='editVehicle(${JSON.stringify(v)})'>✏️ Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteVehicle('${v.id}')">🗑 Delete</button>
+          </td>`:''}
+        </tr>
+      `}).join('')}</tbody>
+    </table>`;
+  }
+
+  async function submitVehicle() {
+    const errEl = document.getElementById('vehicleFormError');
+    const name = document.getElementById('vName').value.trim();
+    const price_day = Number(document.getElementById('vPrice').value);
+    
+    if (!name||!price_day){errEl.textContent='Name and price are required.';errEl.style.display='block';return;}
+    errEl.style.display='none';
+
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('type', document.getElementById('vType').value);
+    formData.append('city', document.getElementById('vCity').value);
+    formData.append('price_day', price_day);
+    formData.append('icon', document.getElementById('vIcon').value.trim()||'🚗');
+    if (document.getElementById('vSeats').value) formData.append('seats', document.getElementById('vSeats').value);
+    formData.append('fuel', document.getElementById('vFuel').value);
+    formData.append('transmission', document.getElementById('vTrans').value);
+    formData.append('description', document.getElementById('vDesc').value.trim());
+
+    const imageFile = document.getElementById('vImage').files[0];
+    if (imageFile) {
+      formData.append('image', imageFile);
+    }
+
+    const url   = editingVehicleId ? `${API}/api/vehicles/${editingVehicleId}` : `${API}/api/vehicles`;
+    const method= editingVehicleId ? 'PUT' : 'POST';
+    try {
+      const res = await fetch(url, {
+        method,
+        credentials:'include',
+        body: formData // Note: Content-Type is set automatically by the browser with FormData boundary
+      });
+      const data=await res.json();
+      if(!res.ok){errEl.textContent=data.error||'Failed.';errEl.style.display='block';return;}
+      showToast(editingVehicleId?'Vehicle updated!':'Vehicle added!','success');
+      resetVehicleForm(); loadVendorVehicles();
+    } catch {errEl.textContent='Network error.';errEl.style.display='block';}
+  }
+
+  function editVehicle(v) {
+    editingVehicleId=v.id;
+    document.getElementById('vehicleFormTitle').textContent='Edit Vehicle';
+    document.getElementById('vehicleFormBtn').textContent='Update Vehicle';
+    document.getElementById('cancelEditBtn').style.display='inline-flex';
+    document.getElementById('vName').value=v.name||'';
+    document.getElementById('vType').value=v.type||'Car';
+    document.getElementById('vCity').value=v.city||'Delhi';
+    document.getElementById('vPrice').value=v.price_day||'';
+    document.getElementById('vIcon').value=v.icon||'🚗';
+    document.getElementById('vSeats').value=v.seats||'';
+    document.getElementById('vFuel').value=v.fuel||'Petrol';
+    document.getElementById('vTrans').value=v.transmission||'Manual';
+    document.getElementById('vDesc').value=v.description||'';
+    document.getElementById('vehicleFormCard').scrollIntoView({behavior:'smooth'});
+  }
+
+  function resetVehicleForm() {
+    editingVehicleId=null;
+    document.getElementById('vehicleFormTitle').textContent='Add New Vehicle';
+    document.getElementById('vehicleFormBtn').textContent='Add Vehicle';
+    document.getElementById('cancelEditBtn').style.display='none';
+    ['vName','vPrice','vIcon','vSeats','vDesc'].forEach(id=>document.getElementById(id).value='');
+  }
+
+  async function deleteVehicle(id) {
+    if(!confirm('Delete this vehicle? This cannot be undone.'))return;
+    try {
+      const res=await fetch(`${API}/api/vehicles/${id}`,{method:'DELETE',credentials:'include'});
+      if(res.ok){showToast('Vehicle deleted.','success');loadVendorVehicles();}
+      else {const d=await res.json();showToast(d.error||'Failed.','error');}
+    } catch{showToast('Network error.','error');}
+  }
+
+  async function doLogout() {
+    await fetch(`${API}/api/auth/logout`,{method:'POST',credentials:'include'});
+    window.location.href='index.html';
+  }
+
+  function showToast(msg,type=''){const t=document.createElement('div');t.className=`toast${type?' toast-'+type:''}`;t.textContent=msg;document.getElementById('toast-container').appendChild(t);setTimeout(()=>t.remove(),3500);}
+  window.addEventListener('scroll', () => { document.querySelector('.site-header')?.classList.toggle('scrolled', window.scrollY > 10); });
+  document.getElementById('hamburger').addEventListener('click',()=>document.getElementById('siteNav').classList.toggle('open'));
+
+  init();
+</script>
+</body>
+</html>

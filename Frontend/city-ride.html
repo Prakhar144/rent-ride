@@ -1125,7 +1125,7 @@
         const { user } = await res.json();
         document.getElementById('navProfile').style.display = 'inline';
         document.getElementById('navLogin').textContent = user.name.split(' ')[0];
-        document.getElementById('navLogin').href = user.role === 'admin' ? 'admin.html' : 'profile.html';
+        document.getElementById('navLogin').href = user.role === 'admin' ? 'admin.html' : (user.role === 'vendor' ? 'vendor.html' : 'profile.html');
         document.getElementById('navLogin').classList.remove('nav-btn');
       }
     } catch {}

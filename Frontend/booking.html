@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -309,7 +309,11 @@
     document.title = `Book ${vehicle.name} — RENT RIDE`;
     document.getElementById('heroSub').textContent = `${vehicle.name} · ${vehicle.city}`;
 
-    document.getElementById('vThumb').textContent = vehicle.icon || '🚗';
+    if (vehicle.image_url) {
+      document.getElementById('vThumb').innerHTML = `<img src="${API}${vehicle.image_url}" style="width:100%;height:100%;object-fit:cover;" />`;
+    } else {
+      document.getElementById('vThumb').textContent = vehicle.icon || '🚗';
+    }
     document.getElementById('vName').textContent  = vehicle.name;
     document.getElementById('vMeta').innerHTML    = `<span>📍 ${vehicle.city}</span><span>🚗 ${vehicle.type}</span><span>⛽ ${vehicle.fuel||'Petrol'}</span>`;
 

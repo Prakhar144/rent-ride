@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -59,6 +59,7 @@
     <div class="admin-nav-item" onclick="showPage('bookings')"><span class="nav-icon">📋</span> Bookings</div>
     <div class="admin-nav-item" onclick="showPage('vehicles')"><span class="nav-icon">🚗</span> Vehicles</div>
     <div class="admin-nav-item" onclick="showPage('users')"><span class="nav-icon">👥</span> Users</div>
+    <div class="admin-nav-item" onclick="showPage('activity')"><span class="nav-icon">📈</span> Activity Logs</div>
     <div style="position:absolute;bottom:20px;left:0;right:0;padding:0 22px;" class="admin-nav-end">
       <button class="btn btn-outline btn-full btn-sm" style="color:#94a3b8;border-color:rgba(255,255,255,0.1);margin-top:16px;" onclick="doLogout()">Logout</button>
     </div>
@@ -118,7 +119,8 @@
           <div class="form-group"><label class="form-label">Type *</label><select class="form-select" id="vType"><option value="Car">Car</option><option value="Bike">Bike</option><option value="Scooter">Scooter</option></select></div>
           <div class="form-group"><label class="form-label">City *</label><select class="form-select" id="vCity"><option value="Delhi">Delhi</option><option value="Mumbai">Mumbai</option><option value="Bangalore">Bangalore</option><option value="Chennai">Chennai</option><option value="Hyderabad">Hyderabad</option><option value="Kolkata">Kolkata</option><option value="Pune">Pune</option><option value="Jaipur">Jaipur</option><option value="Goa">Goa</option><option value="Ahmedabad">Ahmedabad</option></select></div>
           <div class="form-group"><label class="form-label">Price / Day (₹) *</label><input type="number" class="form-input" id="vPrice" placeholder="1500" min="100" /></div>
-          <div class="form-group"><label class="form-label">Icon (emoji)</label><input type="text" class="form-input" id="vIcon" placeholder="🚗" maxlength="4" /></div>
+          <div class="form-group"><label class="form-label">Vehicle Image</label><input type="file" class="form-input" id="vImage" accept="image/*" /></div>
+          <div class="form-group"><label class="form-label">Icon (emoji fallback)</label><input type="text" class="form-input" id="vIcon" placeholder="🚗" maxlength="4" /></div>
           <div class="form-group"><label class="form-label">Seats</label><input type="number" class="form-input" id="vSeats" placeholder="5" min="1" max="10" /></div>
           <div class="form-group"><label class="form-label">Fuel Type</label><select class="form-select" id="vFuel"><option>Petrol</option><option>Diesel</option><option>Electric</option><option>CNG</option></select></div>
           <div class="form-group"><label class="form-label">Transmission</label><select class="form-select" id="vTrans"><option>Manual</option><option>Automatic</option></select></div>
@@ -142,6 +144,16 @@
       <div class="section-card">
         <div class="section-card-header"><h3 id="usersCount">Users</h3></div>
         <div class="table-wrap" id="usersTable"><div class="loading-center"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+    <!-- Activity Logs -->
+    <div class="admin-page" id="page-activity">
+      <div class="page-title">Activity Logs</div>
+      <div class="page-sub">Global track of important actions across the platform.</div>
+      <div class="section-card">
+        <div class="section-card-header"><h3 id="activityCount">Recent Activity</h3></div>
+        <div class="table-wrap" id="activityTable"><div class="loading-center"><div class="spinner"></div></div></div>
       </div>
     </div>
 
@@ -174,6 +186,7 @@
     document.querySelectorAll('.admin-nav-item').forEach(n=>{ if(n.textContent.toLowerCase().includes(page.slice(0,3))) n.classList.add('active'); });
     if (page==='vehicles') loadAdminVehicles();
     if (page==='users') loadAdminUsers();
+    if (page==='activity') loadAdminActivity();
   }
 
   // ── Stats ───────────────────────────────────────────────────────────────────
@@ -219,20 +232,25 @@
 
   function bookingsTable(rows, showActions=false) {
     return `<table>
-      <thead><tr><th>#</th><th>User</th><th>Vehicle</th><th>Dates</th><th>Total</th><th>Status</th>${showActions?'<th>Actions</th>':''}</tr></thead>
+      <thead><tr><th>#</th><th>Booked On</th><th>Customer</th><th>Vehicle & Vendor</th><th>Dates</th><th>Total</th><th>Status</th>${showActions?'<th>Actions</th>':''}</tr></thead>
       <tbody>${rows.map(b=>{
-        const s=new Date(b.start_date).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
-        const e=new Date(b.end_date).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+        const bookedOn = new Date(b.created_at).toLocaleString('en-IN', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+        const s = new Date(b.start_date).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+        const e = new Date(b.end_date).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
         return `<tr>
-          <td style="color:#6b7280;">#${b.id}</td>
+          <td style="color:#6b7280;">#${b.id.slice(-6)}</td>
+          <td style="font-size:0.85rem;color:#6b7280;">${bookedOn}</td>
           <td><div style="font-weight:600;">${b.user_name}</div><small style="color:#6b7280;">${b.email}</small></td>
-          <td>${b.icon||'🚗'} ${b.vehicle_name}<br><small style="color:#6b7280;">${b.city}</small></td>
+          <td>
+            <div style="font-weight:600;">${b.icon||'🚗'} ${b.vehicle_name}</div>
+            <small style="color:#6b7280;">Vendor: ${b.vendor_name !== '—' ? b.vendor_name : 'N/A'}</small>
+          </td>
           <td style="font-size:0.85rem;">${s} → ${e}</td>
           <td style="font-weight:700;color:#ff6a3d;">₹${Number(b.total_price).toLocaleString('en-IN')}</td>
           <td><span class="badge badge-${b.status}">${b.status}</span></td>
           ${showActions?`<td style="display:flex;gap:6px;flex-wrap:wrap;">
-            ${b.status!=='confirmed'?`<button class="btn btn-success btn-sm" onclick="updateBookingStatus(${b.id},'confirmed')">✓ Confirm</button>`:''}
-            ${b.status!=='cancelled'?`<button class="btn btn-danger btn-sm" onclick="updateBookingStatus(${b.id},'cancelled')">✕ Cancel</button>`:''}
+            ${b.status!=='confirmed'?`<button class="btn btn-success btn-sm" onclick="updateBookingStatus('${b.id}','confirmed')">✓ Confirm</button>`:''}
+            ${b.status!=='cancelled'?`<button class="btn btn-danger btn-sm" onclick="updateBookingStatus('${b.id}','cancelled')">✕ Cancel</button>`:''}
           </td>`:''}
         </tr>`;
       }).join('')}</tbody>
@@ -268,10 +286,12 @@
     if (allAdminVehicles.length===0) { wrap.innerHTML='<p style="padding:20px;color:#6b7280;">No vehicles.</p>'; return; }
     wrap.innerHTML = `<table>
       <thead><tr><th>#</th><th>Vehicle</th><th>City</th><th>Type</th><th>Price/Day</th><th>Fuel</th><th>Available</th><th>Actions</th></tr></thead>
-      <tbody>${allAdminVehicles.map(v=>`
+      <tbody>${allAdminVehicles.map(v=>{
+        const thumb = v.image_url ? `<img src="${API}${v.image_url}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;vertical-align:middle;margin-right:8px;" />` : `${v.icon}`;
+        return `
         <tr>
           <td style="color:#6b7280;">${v.id}</td>
-          <td>${v.icon} <strong>${v.name}</strong></td>
+          <td>${thumb} <strong>${v.name}</strong></td>
           <td>${v.city}</td>
           <td>${v.type}</td>
           <td style="font-weight:700;color:#ff6a3d;">₹${v.price_day}</td>
@@ -279,32 +299,45 @@
           <td><span class="badge ${v.available?'badge-confirmed':'badge-cancelled'}">${v.available?'Yes':'No'}</span></td>
           <td style="display:flex;gap:6px;flex-wrap:wrap;">
             <button class="btn btn-outline btn-sm" onclick='editVehicle(${JSON.stringify(v)})'>✏️ Edit</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteVehicle(${v.id})">🗑 Delete</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteVehicle('${v.id}')">🗑 Delete</button>
           </td>
         </tr>
-      `).join('')}</tbody>
+      `}).join('')}</tbody>
     </table>`;
   }
 
   async function submitVehicle() {
     const errEl = document.getElementById('vehicleFormError');
-    const body = {
-      name: document.getElementById('vName').value.trim(),
-      type: document.getElementById('vType').value,
-      city: document.getElementById('vCity').value,
-      price_day: Number(document.getElementById('vPrice').value),
-      icon: document.getElementById('vIcon').value.trim()||'🚗',
-      seats: Number(document.getElementById('vSeats').value)||null,
-      fuel: document.getElementById('vFuel').value,
-      transmission: document.getElementById('vTrans').value,
-      description: document.getElementById('vDesc').value.trim(),
-    };
-    if (!body.name||!body.price_day){errEl.textContent='Name and price are required.';errEl.style.display='block';return;}
+    const name = document.getElementById('vName').value.trim();
+    const price_day = Number(document.getElementById('vPrice').value);
+    
+    if (!name||!price_day){errEl.textContent='Name and price are required.';errEl.style.display='block';return;}
     errEl.style.display='none';
+
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('type', document.getElementById('vType').value);
+    formData.append('city', document.getElementById('vCity').value);
+    formData.append('price_day', price_day);
+    formData.append('icon', document.getElementById('vIcon').value.trim()||'🚗');
+    if (document.getElementById('vSeats').value) formData.append('seats', document.getElementById('vSeats').value);
+    formData.append('fuel', document.getElementById('vFuel').value);
+    formData.append('transmission', document.getElementById('vTrans').value);
+    formData.append('description', document.getElementById('vDesc').value.trim());
+
+    const imageFile = document.getElementById('vImage').files[0];
+    if (imageFile) {
+      formData.append('image', imageFile);
+    }
+
     const url   = editingVehicleId ? `${API}/api/vehicles/${editingVehicleId}` : `${API}/api/vehicles`;
     const method= editingVehicleId ? 'PUT' : 'POST';
     try {
-      const res=await fetch(url,{method,credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      const res = await fetch(url, {
+        method,
+        credentials:'include',
+        body: formData // Note: Content-Type is set automatically by the browser with FormData boundary
+      });
       const data=await res.json();
       if(!res.ok){errEl.textContent=data.error||'Failed.';errEl.style.display='block';return;}
       showToast(editingVehicleId?'Vehicle updated!':'Vehicle added!','success');
@@ -354,15 +387,63 @@
       const users = data.users||[];
       document.getElementById('usersCount').textContent = `Users (${users.length})`;
       document.getElementById('usersTable').innerHTML = `<table>
-        <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Joined</th></tr></thead>
-        <tbody>${users.map(u=>`
+        <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+        <tbody>${users.map(u=>{
+          let actionBtn = '';
+          if(u.role !== 'admin') {
+            if(u.status === 'blocked') actionBtn = `<button class="btn btn-outline btn-sm" onclick="unblockUser('${u.id}')">🔓 Unblock</button>`;
+            else actionBtn = `<button class="btn btn-danger btn-sm" onclick="blockUser('${u.id}')">🚫 Block</button>`;
+          }
+          return `
           <tr>
-            <td style="color:#6b7280;">${u.id}</td>
+            <td style="color:#6b7280;">${u.id.slice(-6)}</td>
             <td><strong>${u.name}</strong></td>
             <td>${u.email}</td>
             <td>${u.phone||'—'}</td>
             <td><span class="badge ${u.role==='admin'?'badge-confirmed':'badge-pending'}">${u.role}</span></td>
+            <td><span class="badge ${u.status==='blocked'?'badge-cancelled':'badge-confirmed'}">${u.status}</span></td>
             <td style="font-size:0.82rem;color:#6b7280;">${new Date(u.created_at).toLocaleDateString('en-IN')}</td>
+            <td>${actionBtn}</td>
+          </tr>
+        `}).join('')}</tbody>
+      </table>`;
+    } catch {}
+  }
+
+  async function blockUser(id) {
+    if(!confirm('Block this user? They will be unable to log in or use the platform.')) return;
+    try {
+      const res = await fetch(`${API}/api/admin/users/${id}/block`, {method:'PUT', credentials:'include'});
+      if(res.ok) { showToast('User blocked', 'success'); loadAdminUsers(); }
+      else { const d=await res.json(); showToast(d.error||'Failed', 'error'); }
+    } catch { showToast('Network error', 'error'); }
+  }
+
+  async function unblockUser(id) {
+    try {
+      const res = await fetch(`${API}/api/admin/users/${id}/unblock`, {method:'PUT', credentials:'include'});
+      if(res.ok) { showToast('User unblocked', 'success'); loadAdminUsers(); }
+      else { const d=await res.json(); showToast(d.error||'Failed', 'error'); }
+    } catch { showToast('Network error', 'error'); }
+  }
+
+  // ── Activity Logs ───────────────────────────────────────────────────────────
+  async function loadAdminActivity() {
+    try {
+      const res  = await fetch(`${API}/api/admin/activity`, { credentials:'include' });
+      const data = await res.json();
+      const logs = data.activity||[];
+      document.getElementById('activityTable').innerHTML = logs.length===0 
+        ? '<p style="padding:20px;color:#6b7280;">No activity found.</p>'
+        : `<table>
+        <thead><tr><th>Time</th><th>User</th><th>Role</th><th>Action</th><th>Details</th></tr></thead>
+        <tbody>${logs.map(l=>`
+          <tr>
+            <td style="font-size:0.85rem;color:#6b7280;">${new Date(l.created_at).toLocaleString('en-IN')}</td>
+            <td><strong>${l.user_name}</strong><br><small>${l.email}</small></td>
+            <td><span class="badge ${l.role==='admin'?'badge-confirmed':(l.role==='vendor'?'badge-pending':'')}">${l.role}</span></td>
+            <td style="font-weight:600;color:var(--dark2);">${l.action}</td>
+            <td style="font-size:0.9rem;">${l.details}</td>
           </tr>
         `).join('')}</tbody>
       </table>`;

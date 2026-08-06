@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -48,6 +48,7 @@
     <div class="tab-row">
       <button class="tab-btn active" id="loginTab" onclick="switchTab('login')">Sign In</button>
       <button class="tab-btn" id="registerTab" onclick="switchTab('register')">Register</button>
+      <button class="tab-btn" id="vendorTab" onclick="switchTab('vendor')">Vendor Portal</button>
     </div>
 
     <!-- Sign In -->
@@ -93,6 +94,56 @@
         Already have an account? <a href="#" onclick="switchTab('login')" style="color:#ff6a3d;font-weight:600;">Sign in</a>
       </p>
     </div>
+
+    <!-- Vendor Portal -->
+    <div class="auth-panel" id="vendorPanel">
+      <div style="text-align:center; margin-bottom:16px;">
+        <h3 style="font-size:1.15rem; color:#ff6a3d; margin-bottom:6px;">Vendor Partner Program</h3>
+        <p style="font-size:0.85rem; color:#6b7280;">List your vehicles and start earning with us.</p>
+      </div>
+      <div id="vendorError" class="alert alert-error" style="display:none;"></div>
+      
+      <!-- Vendor Sign In -->
+      <div id="vendorLoginBlock">
+        <div class="form-group">
+          <label class="form-label">Vendor Email</label>
+          <input type="email" class="form-input" id="vLoginEmail" placeholder="vendor@example.com" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" id="vLoginPassword" placeholder="Your password" />
+        </div>
+        <button class="btn btn-primary btn-full btn-lg" onclick="doLogin('vendor')" id="vLoginBtn" style="background:#14213d; border-color:#14213d;">Vendor Sign In →</button>
+        <p style="text-align:center;margin-top:16px;font-size:0.85rem;color:#6b7280;">
+          Want to list your vehicle? <a href="#" onclick="toggleVendor('register')" style="color:#ff6a3d;font-weight:600;">Sign up here</a>
+        </p>
+      </div>
+
+      <!-- Vendor Sign Up -->
+      <div id="vendorRegisterBlock" style="display:none;">
+        <div class="form-group">
+          <label class="form-label">Business / Full Name</label>
+          <input type="text" class="form-input" id="vRegName" placeholder="Your Name" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" class="form-input" id="vRegEmail" placeholder="vendor@example.com" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone</label>
+          <input type="tel" class="form-input" id="vRegPhone" placeholder="9876543210" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" id="vRegPassword" placeholder="Min. 6 characters" />
+        </div>
+        <button class="btn btn-primary btn-full btn-lg" onclick="doRegister('vendor')" id="vRegisterBtn" style="background:#14213d; border-color:#14213d;">Register as Vendor →</button>
+        <p style="text-align:center;margin-top:16px;font-size:0.85rem;color:#6b7280;">
+          Already a partner? <a href="#" onclick="toggleVendor('login')" style="color:#ff6a3d;font-weight:600;">Sign in here</a>
+        </p>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -107,55 +158,99 @@
       const res = await fetch(`${API}/api/auth/me`, { credentials: 'include' });
       if (res.ok) { const { user } = await res.json(); redirect(user); }
     } catch {}
-    // Check if #register hash
     if (location.hash === '#register') switchTab('register');
+    if (location.hash === '#vendor') switchTab('vendor');
   })();
 
   function redirect(user) {
-    window.location.href = user.role === 'admin' ? 'admin.html' : 'profile.html';
+    if (user.role === 'admin') window.location.href = 'admin.html';
+    else if (user.role === 'vendor') window.location.href = 'vendor.html';
+    else window.location.href = 'profile.html';
   }
 
   function switchTab(tab) {
     document.getElementById('loginTab').classList.toggle('active', tab==='login');
     document.getElementById('registerTab').classList.toggle('active', tab==='register');
+    document.getElementById('vendorTab').classList.toggle('active', tab==='vendor');
     document.getElementById('loginPanel').classList.toggle('active', tab==='login');
     document.getElementById('registerPanel').classList.toggle('active', tab==='register');
+    document.getElementById('vendorPanel').classList.toggle('active', tab==='vendor');
   }
 
-  async function doLogin() {
-    const email    = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    const errEl    = document.getElementById('loginError');
+  function toggleVendor(mode) {
+    document.getElementById('vendorError').style.display = 'none';
+    if(mode === 'register') {
+      document.getElementById('vendorLoginBlock').style.display = 'none';
+      document.getElementById('vendorRegisterBlock').style.display = 'block';
+    } else {
+      document.getElementById('vendorLoginBlock').style.display = 'block';
+      document.getElementById('vendorRegisterBlock').style.display = 'none';
+    }
+  }
+
+  async function doLogin(type = 'user') {
+    const isVendor = type === 'vendor';
+    const emailId = isVendor ? 'vLoginEmail' : 'loginEmail';
+    const passId  = isVendor ? 'vLoginPassword' : 'loginPassword';
+    const errId   = isVendor ? 'vendorError' : 'loginError';
+    const btnId   = isVendor ? 'vLoginBtn' : 'loginBtn';
+    
+    const email    = document.getElementById(emailId).value.trim();
+    const password = document.getElementById(passId).value;
+    const errEl    = document.getElementById(errId);
+    
     if (!email || !password) { errEl.textContent='Please enter email and password.'; errEl.style.display='block'; return; }
     errEl.style.display='none';
-    const btn = document.getElementById('loginBtn');
+    
+    const btn = document.getElementById(btnId);
+    const origText = btn.textContent;
     btn.textContent='Signing in…'; btn.disabled=true;
     try {
       const res  = await fetch(`${API}/api/auth/login`, { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email,password}) });
       const data = await res.json();
-      if (!res.ok) { errEl.textContent=data.error||'Login failed.'; errEl.style.display='block'; btn.textContent='Sign In →'; btn.disabled=false; return; }
+      if (!res.ok) { errEl.textContent=data.error||'Login failed.'; errEl.style.display='block'; btn.textContent=origText; btn.disabled=false; return; }
+      
+      if (isVendor && data.user.role !== 'vendor' && data.user.role !== 'admin') {
+        errEl.textContent='This account is not registered as a Vendor.'; errEl.style.display='block'; btn.textContent=origText; btn.disabled=false;
+        // Optionally logout the user immediately if they forced a wrong login type
+        fetch(`${API}/api/auth/logout`, { method:'POST', credentials:'include' });
+        return;
+      }
+      
       showToast('Welcome back, '+data.user.name.split(' ')[0]+'! 👋','success');
       setTimeout(() => redirect(data.user), 800);
-    } catch { errEl.textContent='Network error.'; errEl.style.display='block'; btn.textContent='Sign In →'; btn.disabled=false; }
+    } catch { errEl.textContent='Network error.'; errEl.style.display='block'; btn.textContent=origText; btn.disabled=false; }
   }
 
-  async function doRegister() {
-    const name     = document.getElementById('regName').value.trim();
-    const email    = document.getElementById('regEmail').value.trim();
-    const phone    = document.getElementById('regPhone').value.trim();
-    const password = document.getElementById('regPassword').value;
-    const errEl    = document.getElementById('regError');
+  async function doRegister(type = 'user') {
+    const isVendor = type === 'vendor';
+    const nameId   = isVendor ? 'vRegName' : 'regName';
+    const emailId  = isVendor ? 'vRegEmail' : 'regEmail';
+    const phoneId  = isVendor ? 'vRegPhone' : 'regPhone';
+    const passId   = isVendor ? 'vRegPassword' : 'regPassword';
+    const errId    = isVendor ? 'vendorError' : 'regError';
+    const btnId    = isVendor ? 'vRegisterBtn' : 'registerBtn';
+
+    const name     = document.getElementById(nameId).value.trim();
+    const email    = document.getElementById(emailId).value.trim();
+    const phone    = document.getElementById(phoneId).value.trim();
+    const password = document.getElementById(passId).value;
+    const errEl    = document.getElementById(errId);
+    
     if (!name||!email||!password) { errEl.textContent='Name, email and password are required.'; errEl.style.display='block'; return; }
     if (password.length < 6) { errEl.textContent='Password must be at least 6 characters.'; errEl.style.display='block'; return; }
     errEl.style.display='none';
-    const btn=document.getElementById('registerBtn'); btn.textContent='Creating…'; btn.disabled=true;
+    
+    const btn=document.getElementById(btnId); 
+    const origText = btn.textContent;
+    btn.textContent='Creating…'; btn.disabled=true;
     try {
-      const res  = await fetch(`${API}/api/auth/register`, { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name,email,phone,password}) });
+      const res  = await fetch(`${API}/api/auth/register`, { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name,email,phone,password,isVendor}) });
       const data = await res.json();
-      if (!res.ok) { errEl.textContent=data.error||'Registration failed.'; errEl.style.display='block'; btn.textContent='Create Account →'; btn.disabled=false; return; }
+      if (!res.ok) { errEl.textContent=data.error||'Registration failed.'; errEl.style.display='block'; btn.textContent=origText; btn.disabled=false; return; }
       showToast('Account created! Welcome, '+data.user.name.split(' ')[0]+'! 🎉','success');
       setTimeout(() => redirect(data.user), 800);
-    } catch { errEl.textContent='Network error.'; errEl.style.display='block'; btn.textContent='Create Account →'; btn.disabled=false; }
+    } catch { errEl.textContent='Network error.'; errEl.style.display='block'; btn.textContent=origText; btn.disabled=false; }
   }
 
   async function adminDemo() {

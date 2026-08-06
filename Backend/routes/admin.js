@@ -1,5 +1,5 @@
 const router                    = require('express').Router();
-const { User, Vehicle, Booking }= require('../models');
+const { User, Vehicle, Booking, ActivityLog }= require('../models');
 const { requireAdmin }          = require('./middleware');
 
 router.use(requireAdmin);
@@ -27,8 +27,12 @@ router.get('/stats', async (req, res) => {
 router.get('/bookings', async (req, res) => {
   try {
     const bookings = await Booking.find()
-      .populate('user',    'name email phone')
-      .populate('vehicle', 'name icon city type')
+      .populate('user', 'name email phone')
+      .populate({
+        path: 'vehicle',
+        select: 'name icon city type vendor',
+        populate: { path: 'vendor', select: 'name email phone' }
+      })
       .sort({ createdAt: -1 });
     res.json({
       bookings: bookings.map(b => ({
@@ -40,6 +44,9 @@ router.get('/bookings', async (req, res) => {
         icon:         b.vehicle?.icon || '🚗',
         city:         b.vehicle?.city || '—',
         type:         b.vehicle?.type || '—',
+        vendor_name:  b.vehicle?.vendor?.name || '—',
+        vendor_email: b.vehicle?.vendor?.email || '—',
+        vendor_phone: b.vehicle?.vendor?.phone || '—',
         start_date:   b.start_date,
         end_date:     b.end_date,
         total_price:  b.total_price,
@@ -73,8 +80,70 @@ router.get('/users', async (req, res) => {
         email:      u.email,
         phone:      u.phone,
         role:       u.role,
+        status:     u.status,
         created_at: u.createdAt,
       })),
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── PUT /api/admin/users/:id/block ───────────────────────────────────────────
+router.put('/users/:id/block', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (user.role === 'admin') return res.status(403).json({ error: 'Cannot block an admin' });
+    
+    user.status = 'blocked';
+    await user.save();
+    
+    await ActivityLog.create({
+      user: req.user.id,
+      action: 'Blocked User',
+      details: `Blocked user ID: ${user._id} (${user.email})`
+    });
+
+    res.json({ message: 'User blocked successfully', user: { id: user._id, status: user.status } });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── PUT /api/admin/users/:id/unblock ─────────────────────────────────────────
+router.put('/users/:id/unblock', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    
+    user.status = 'active';
+    await user.save();
+    
+    await ActivityLog.create({
+      user: req.user.id,
+      action: 'Unblocked User',
+      details: `Unblocked user ID: ${user._id} (${user.email})`
+    });
+
+    res.json({ message: 'User unblocked successfully', user: { id: user._id, status: user.status } });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── GET /api/admin/activity ──────────────────────────────────────────────────
+router.get('/activity', async (req, res) => {
+  try {
+    const logs = await ActivityLog.find()
+      .populate('user', 'name email role')
+      .sort({ createdAt: -1 })
+      .limit(100);
+      
+    res.json({
+      activity: logs.map(l => ({
+        id:         l._id,
+        user_name:  l.user?.name || 'Guest',
+        email:      l.user?.email || '—',
+        role:       l.user?.role || '—',
+        action:     l.action,
+        details:    l.details,
+        created_at: l.createdAt,
+      }))
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

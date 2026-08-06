@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -163,8 +163,8 @@
         if(loginBtn) loginBtn.style.display = 'none';
         if(profBtn) {
           profBtn.style.display = 'inline-block';
-          profBtn.textContent = user.role === 'admin' ? 'Admin' : 'Profile';
-          profBtn.href = user.role === 'admin' ? 'admin.html' : 'profile.html';
+          profBtn.textContent = user.role === 'admin' ? 'Admin' : (user.role === 'vendor' ? 'Vendor' : 'Profile');
+          profBtn.href = user.role === 'admin' ? 'admin.html' : (user.role === 'vendor' ? 'vendor.html' : 'profile.html');
         }
       }
     } catch {}

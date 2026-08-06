@@ -1,5 +1,5 @@
 const router             = require('express').Router();
-const { Booking, Vehicle }= require('../models');
+const { Booking, Vehicle, ActivityLog }= require('../models');
 const { requireAuth }    = require('./middleware');
 
 // ─── POST /api/bookings ───────────────────────────────────────────────────────
@@ -41,6 +41,13 @@ router.post('/', requireAuth, async (req, res) => {
 
     // Populate for response
     await booking.populate('vehicle', 'name icon city type price_day');
+
+    await ActivityLog.create({
+      user: req.user.id,
+      action: 'Created Booking',
+      details: `Booked ${booking.vehicle.name} from ${start_date} to ${end_date}`
+    });
+
     res.status(201).json({ booking: flattenBooking(booking) });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -65,6 +72,13 @@ router.delete('/:id', requireAuth, async (req, res) => {
     if (booking.status === 'cancelled') return res.status(400).json({ error: 'Already cancelled' });
     booking.status = 'cancelled';
     await booking.save();
+    
+    await ActivityLog.create({
+      user: req.user.id,
+      action: 'Cancelled Booking',
+      details: `Cancelled booking ID: ${booking._id}`
+    });
+
     res.json({ message: 'Booking cancelled' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

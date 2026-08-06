@@ -5,7 +5,7 @@ async function seedDB() {
   // ── Seed admin if no users exist ──────────────────────────────────────────
   const userCount = await User.countDocuments();
   if (userCount === 0) {
-    const adminPw = bcrypt.hashSync('admin123', 10);
+    const adminPw = bcrypt.hashSync('admin@123', 10);
     await User.create({
       name: 'Admin',
       email: 'admin@rentride.com',
@@ -13,7 +13,7 @@ async function seedDB() {
       password: adminPw,
       role: 'admin',
     });
-    console.log('[Seed] Admin user created: admin@rentride.com / admin123');
+    console.log('[Seed] Admin user created: admin@rentride.com / admin@123');
   }
 
   // ── Seed vehicles if none exist ───────────────────────────────────────────

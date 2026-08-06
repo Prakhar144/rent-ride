@@ -6,7 +6,8 @@ const userSchema = new mongoose.Schema({
   email:     { type: String, required: true, unique: true, lowercase: true, trim: true },
   phone:     { type: String, default: null },
   password:  { type: String, required: true },
-  role:      { type: String, enum: ['user', 'admin'], default: 'user' },
+  role:      { type: String, enum: ['user', 'vendor', 'admin'], default: 'user' },
+  status:    { type: String, enum: ['active', 'blocked'], default: 'active' },
 }, { timestamps: true });
 
 // ─── Vehicle ───────────────────────────────────────────────────────────────────
@@ -15,12 +16,14 @@ const vehicleSchema = new mongoose.Schema({
   type:         { type: String, enum: ['Car', 'Bike', 'Scooter'], required: true },
   city:         { type: String, required: true },
   icon:         { type: String, default: '🚗' },
+  image_url:    { type: String, default: null },
   price_day:    { type: Number, required: true, min: 1 },
   seats:        { type: Number, default: null },
   fuel:         { type: String, enum: ['Petrol', 'Diesel', 'Electric', 'CNG'], default: 'Petrol' },
   transmission: { type: String, enum: ['Manual', 'Automatic'], default: 'Manual' },
   description:  { type: String, default: '' },
   available:    { type: Boolean, default: true },
+  vendor:       { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
 }, { timestamps: true });
 
 // ─── Booking ───────────────────────────────────────────────────────────────────
@@ -44,8 +47,16 @@ const bookingSchema = new mongoose.Schema({
   distance_km:         { type: Number, default: null },
 }, { timestamps: true });
 
-const User    = mongoose.model('User',    userSchema);
-const Vehicle = mongoose.model('Vehicle', vehicleSchema);
-const Booking = mongoose.model('Booking', bookingSchema);
+// ─── Activity Log ──────────────────────────────────────────────────────────────
+const activityLogSchema = new mongoose.Schema({
+  user:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  action:  { type: String, required: true },
+  details: { type: String, default: '' },
+}, { timestamps: true });
 
-module.exports = { User, Vehicle, Booking };
+const User       = mongoose.model('User', userSchema);
+const Vehicle    = mongoose.model('Vehicle', vehicleSchema);
+const Booking    = mongoose.model('Booking', bookingSchema);
+const ActivityLog= mongoose.model('ActivityLog', activityLogSchema);
+
+module.exports = { User, Vehicle, Booking, ActivityLog };
