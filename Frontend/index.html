@@ -774,8 +774,8 @@
     maxBoundsViscosity: 1.0,
     minZoom: 5
   }).setView([22.5, 79], 5);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors', maxZoom: 12
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png', {
+    attribution: '© OpenStreetMap contributors', maxZoom: 19
   }).addTo(map);
 
   const customIcon = L.divIcon({
