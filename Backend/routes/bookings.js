@@ -5,7 +5,7 @@ const { requireAuth }    = require('./middleware');
 // ─── POST /api/bookings ───────────────────────────────────────────────────────
 router.post('/', requireAuth, async (req, res) => {
   try {
-    const { vehicle_id, start_date, end_date } = req.body;
+    const { vehicle_id, start_date, end_date, ride_type, pickup_address, drop_address, distance_km } = req.body;
     if (!vehicle_id || !start_date || !end_date)
       return res.status(400).json({ error: 'vehicle_id, start_date, end_date are required' });
 
@@ -33,6 +33,10 @@ router.post('/', requireAuth, async (req, res) => {
       start_date,
       end_date,
       total_price,
+      ride_type:      ride_type      || 'daily',
+      pickup_address: pickup_address || null,
+      drop_address:   drop_address   || null,
+      distance_km:    distance_km    || null,
     });
 
     // Populate for response
@@ -70,19 +74,23 @@ function flattenBooking(b) {
   const obj = b.toObject ? b.toObject() : b;
   const v   = obj.vehicle || {};
   return {
-    id:           obj._id,
-    user_id:      obj.user,
-    vehicle_id:   v._id || obj.vehicle,
-    vehicle_name: v.name  || '',
-    icon:         v.icon  || '🚗',
-    city:         v.city  || '',
-    type:         v.type  || '',
-    price_day:    v.price_day || 0,
-    start_date:   obj.start_date,
-    end_date:     obj.end_date,
-    total_price:  obj.total_price,
-    status:       obj.status,
-    created_at:   obj.createdAt,
+    id:             obj._id,
+    user_id:        obj.user,
+    vehicle_id:     v._id || obj.vehicle,
+    vehicle_name:   v.name  || '',
+    icon:           v.icon  || '🚗',
+    city:           v.city  || '',
+    type:           v.type  || '',
+    price_day:      v.price_day || 0,
+    start_date:     obj.start_date,
+    end_date:       obj.end_date,
+    total_price:    obj.total_price,
+    status:         obj.status,
+    ride_type:      obj.ride_type || 'daily',
+    pickup_address: obj.pickup_address || null,
+    drop_address:   obj.drop_address   || null,
+    distance_km:    obj.distance_km    || null,
+    created_at:     obj.createdAt,
   };
 }
 

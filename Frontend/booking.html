@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Book &amp; Pay — RideIndia</title>
+<title>Book &amp; Pay — RENT RIDE</title>
 <meta name="description" content="Book your self-drive vehicle and pay securely with Razorpay." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="stylesheet" href="assets/style.css" />
@@ -17,9 +17,9 @@
   /* ── Steps Progress Bar ── */
   .steps-bar {
     display:flex; align-items:center; gap:0;
-    background:#fff; border-radius:14px; padding:20px 28px;
-    border:1px solid #e5e7eb; margin-bottom:24px;
-    box-shadow:0 2px 8px rgba(0,0,0,0.05);
+    background:#fff; border-radius:var(--radius); padding:20px 28px;
+    border:1px solid var(--gray-light); margin-bottom:24px;
+    box-shadow:var(--shadow-sm);
   }
   .step-item { display:flex; align-items:center; gap:10px; flex:1; }
   .step-item:last-child { flex:0; }
@@ -30,39 +30,39 @@
     background:#f1f3f5; color:#9ca3af; border:2px solid #e5e7eb;
     transition:all .3s;
   }
-  .step-item.done   .step-circle { background:#16a34a; color:#fff; border-color:#16a34a; }
-  .step-item.active .step-circle { background:#ff6a3d; color:#fff; border-color:#ff6a3d; }
+  .step-item.done   .step-circle { background:var(--success); color:#fff; border-color:var(--success); }
+  .step-item.active .step-circle { background:var(--primary); color:#fff; border-color:var(--primary); }
   .step-label { font-size:0.82rem; font-weight:600; color:#9ca3af; transition:color .3s; }
   .step-item.done   .step-label,
-  .step-item.active .step-label { color:#14213d; }
+  .step-item.active .step-label { color:var(--dark2); }
   .step-connector { flex:1; height:2px; background:#e5e7eb; margin:0 8px; border-radius:2px; transition:background .3s; }
-  .step-connector.done { background:#16a34a; }
+  .step-connector.done { background:var(--success); }
 
   /* ── Vehicle Preview ── */
-  .vehicle-preview { background:#fff; border-radius:16px; border:1px solid #e5e7eb; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.06); margin-bottom:22px; }
-  .vehicle-preview-thumb { height:160px; display:flex; align-items:center; justify-content:center; font-size:5rem; background:linear-gradient(135deg,#fff3ec,#fce7dc); position:relative; }
-  .vehicle-preview-body { padding:18px 22px; }
-  .vehicle-preview-name { font-size:1.3rem; font-weight:800; margin-bottom:4px; }
-  .vehicle-preview-meta { color:#6b7280; font-size:0.85rem; display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+  .vehicle-preview { background:#fff; border-radius:var(--radius); border:1px solid var(--gray-light); overflow:hidden; box-shadow:var(--shadow-sm); margin-bottom:22px; }
+  .vehicle-preview-thumb { height:160px; display:flex; align-items:center; justify-content:center; font-size:5rem; background:linear-gradient(135deg,var(--primary-light),#fce7dc); position:relative; }
+  .vehicle-preview-body { padding:22px 24px; }
+  .vehicle-preview-name { font-size:1.3rem; font-weight:900; margin-bottom:6px; color:var(--dark2); letter-spacing:-0.5px; }
+  .vehicle-preview-meta { color:var(--gray); font-size:0.85rem; display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
   .vehicle-preview-specs { display:flex; gap:8px; flex-wrap:wrap; }
 
   /* ── Detail Section ── */
-  .detail-section { background:#fff; border-radius:14px; border:1px solid #e5e7eb; padding:22px; margin-bottom:18px; }
-  .detail-section h3 { font-size:0.95rem; font-weight:800; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
-  .detail-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #f1f3f5; font-size:0.88rem; }
+  .detail-section { background:#fff; border-radius:var(--radius); border:1px solid var(--gray-light); padding:24px; margin-bottom:18px; box-shadow:var(--shadow-xs); }
+  .detail-section h3 { font-size:0.95rem; font-weight:800; margin-bottom:14px; display:flex; align-items:center; gap:8px; color:var(--dark2); }
+  .detail-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--gray-50); font-size:0.88rem; }
   .detail-row:last-child { border:none; }
-  .detail-row .label { color:#6b7280; }
-  .detail-row .val   { font-weight:600; }
+  .detail-row .label { color:var(--gray); }
+  .detail-row .val   { font-weight:600; color:var(--dark2); }
 
   /* ── Sidebar card ── */
-  .booking-form-card { background:#fff; border-radius:16px; border:1px solid #e5e7eb; padding:26px; box-shadow:0 4px 20px rgba(0,0,0,0.08); }
-  .booking-form-card h2 { font-size:1.1rem; font-weight:800; margin-bottom:4px; }
-  .price-tag { font-size:1.5rem; font-weight:900; color:#ff6a3d; margin-bottom:18px; }
-  .price-tag small { font-size:0.78rem; font-weight:400; color:#6b7280; }
-  .date-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  .price-breakdown { background:#f7f8fa; border-radius:10px; padding:14px 16px; margin:14px 0; }
-  .pb-row  { display:flex; justify-content:space-between; font-size:0.85rem; color:#6b7280; padding:3px 0; }
-  .pb-total{ display:flex; justify-content:space-between; font-size:1rem; font-weight:800; color:#14213d; padding-top:10px; border-top:1px solid #e5e7eb; margin-top:6px; }
+  .booking-form-card { background:#fff; border-radius:var(--radius); border:1px solid var(--gray-light); padding:28px; box-shadow:var(--shadow-md); }
+  .booking-form-card h2 { font-size:1.1rem; font-weight:800; margin-bottom:4px; color:var(--dark2); }
+  .price-tag { font-size:1.6rem; font-weight:900; color:var(--primary); margin-bottom:20px; }
+  .price-tag small { font-size:0.82rem; font-weight:600; color:var(--gray); }
+  .date-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .price-breakdown { background:var(--gray-100); border-radius:var(--radius-sm); padding:16px 18px; margin:16px 0; border:1px solid var(--gray-light); }
+  .pb-row  { display:flex; justify-content:space-between; font-size:0.88rem; color:var(--gray); padding:5px 0; }
+  .pb-total{ display:flex; justify-content:space-between; font-size:1.05rem; font-weight:800; color:var(--dark2); padding-top:12px; border-top:1px solid var(--gray-light); margin-top:8px; }
 
   /* ── Policy chips ── */
   .policy-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
@@ -99,10 +99,11 @@
 <body>
 
 <header class="site-header">
-  <div class="logo"><a href="index.html">Ride<span>India</span> 🚗</a></div>
+  <div class="logo"><a href="index.html">RENT<span>RIDE</span> 🚗</a></div>
   <nav class="site-nav" id="siteNav">
     <a href="index.html">Home</a>
     <a href="vehicles.html">Vehicles</a>
+    <a href="contact.html">Contact</a>
     <a href="profile.html" id="navProfile" style="display:none;">Profile</a>
     <a href="login.html" id="navLogin">Sign In</a>
   </nav>
@@ -263,7 +264,7 @@
 </div>
 
 <footer class="site-footer" style="margin-top:40px;">
-  <div class="footer-bottom"><p><strong>RideIndia</strong> — © 2026 All rights reserved.</p></div>
+  <div class="footer-bottom"><p><strong>RENT RIDE</strong> — © 2026 All rights reserved.</p></div>
 </footer>
 <div id="toast-container"></div>
 
@@ -305,7 +306,7 @@
 
   // ── Render vehicle details ───────────────────────────────────────────────────
   function renderVehicle() {
-    document.title = `Book ${vehicle.name} — RideIndia`;
+    document.title = `Book ${vehicle.name} — RENT RIDE`;
     document.getElementById('heroSub').textContent = `${vehicle.name} · ${vehicle.city}`;
 
     document.getElementById('vThumb').textContent = vehicle.icon || '🚗';
@@ -442,7 +443,7 @@
         key:         data.key,
         amount:      data.amount,
         currency:    data.currency,
-        name:        'RideIndia',
+        name:        'RENT RIDE',
         description: `${data.vehicle.name} — ${data.days} day${data.days>1?'s':''}`,
         order_id:    data.order_id,
         image:       '',
@@ -519,6 +520,8 @@
     setTimeout(() => t.remove(), 4000);
   }
 
+    // Sticky header shadow
+  window.addEventListener('scroll', () => { document.querySelector('.site-header')?.classList.toggle('scrolled', window.scrollY > 10); });
   document.getElementById('hamburger').addEventListener('click', () =>
     document.getElementById('siteNav').classList.toggle('open'));
 

@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>RideIndia — Self-Drive Car & Bike Rentals Across India</title>
-<meta name="description" content="Rent cars, bikes, and scooters across 10+ Indian cities with RideIndia. Instant booking, transparent pricing, no hidden charges." />
+<title>RENT RIDE — Self-Drive Car & Bike Rentals Across India</title>
+<meta name="description" content="Rent cars, bikes, and scooters across 10+ Indian cities with RENT RIDE. Instant booking, transparent pricing, no hidden charges." />
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -199,11 +199,108 @@
   .cost-row { display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 6px; }
   .cost-row.total { font-weight: 700; font-size: 1rem; border-top: 1px solid #e5e7eb; padding-top: 10px; margin-top: 6px; }
 
+  /* ── City Rides Banner ───────────────────────────────────────────────── */
+  .city-rides-banner {
+    background: linear-gradient(135deg, #0f1e36 0%, #14213d 50%, #1a2f52 100%);
+    padding: 64px 6%;
+    position: relative;
+    overflow: hidden;
+  }
+  .city-rides-banner::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 30% 60%, rgba(255,106,61,0.12) 0%, transparent 65%);
+  }
+  .crb-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: center;
+    max-width: 1100px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .crb-badge {
+    display: inline-block;
+    background: rgba(255,106,61,0.2);
+    border: 1px solid rgba(255,106,61,0.4);
+    color: #ff6a3d;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    letter-spacing: 0.3px;
+  }
+  .crb-left h2 {
+    font-size: 2.4rem;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: -0.8px;
+    line-height: 1.15;
+    margin-bottom: 14px;
+  }
+  .crb-left h2 span { color: #ff6a3d; }
+  .crb-left p { color: #94a3b8; font-size: 1rem; line-height: 1.7; margin-bottom: 24px; }
+  .crb-cities { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+  .crb-city-pill {
+    padding: 7px 16px;
+    border-radius: 20px;
+    border: 1.5px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.06);
+    color: #94a3b8;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .crb-city-pill:hover {
+    background: rgba(255,106,61,0.2);
+    border-color: #ff6a3d;
+    color: #ff6a3d;
+    transform: translateY(-1px);
+  }
+  .crb-cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 28px;
+    background: linear-gradient(135deg, #ff6a3d, #e2531f);
+    color: #fff;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 800;
+    text-decoration: none;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(255,106,61,0.4);
+  }
+  .crb-cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(255,106,61,0.5); }
+  .crb-right { display: flex; flex-direction: column; gap: 14px; }
+  .crb-feature-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 16px 20px;
+    backdrop-filter: blur(8px);
+    transition: all 0.2s;
+  }
+  .crb-feature-card:hover { background: rgba(255,255,255,0.09); transform: translateX(4px); }
+  .crb-fc-icon { font-size: 1.8rem; flex-shrink: 0; }
+  .crb-fc-text { display: flex; flex-direction: column; gap: 3px; }
+  .crb-fc-text strong { color: #fff; font-size: 0.92rem; font-weight: 700; }
+  .crb-fc-text span { color: #94a3b8; font-size: 0.8rem; }
+
   @media (max-width: 860px) {
     .search-row-1 { grid-template-columns: 1fr 44px 1fr; }
     .search-row-2 { grid-template-columns: 1fr 1fr; }
     .search-btn-wrap { grid-column: 1/-1; border-radius: 0 0 20px 20px; padding: 10px 16px 14px; }
     .search-btn { width: 100%; justify-content: center; }
+    .crb-content { grid-template-columns: 1fr; gap: 28px; }
+    .crb-left h2 { font-size: 1.8rem; }
   }
   @media (max-width: 560px) {
     .hero h1 { font-size: 1.9rem; }
@@ -211,6 +308,8 @@
     .search-row-2 { grid-template-columns: 1fr; }
     .loc-field, .search-field { padding: 12px 16px; }
     .search-btn-wrap { padding: 8px 16px 12px; }
+    .city-rides-banner { padding: 40px 5%; }
+    .crb-left h2 { font-size: 1.5rem; }
   }
 </style>
 </head>
@@ -218,10 +317,11 @@
 
 <!-- ── Header ─────────────────────────────────────────────────────────────── -->
 <header class="site-header">
-  <div class="logo">Ride<span>India</span> 🚗</div>
+  <div class="logo">RENT<span>RIDE</span> 🚗</div>
   <nav class="site-nav" id="siteNav">
     <a href="index.html" class="active">Home</a>
     <a href="vehicles.html">Vehicles</a>
+    <a href="city-ride.html">🏙️ City Rides</a>
     <a href="#map-section">Locations</a>
     <a href="#how">How It Works</a>
     <a href="login.html" class="nav-btn" id="navAuthBtn">Sign In</a>
@@ -314,17 +414,69 @@
   </div>
 </section>
 
+<!-- ── City Rides Banner ─────────────────────────────────────────────────── -->
+<section class="city-rides-banner" id="city-rides">
+  <div class="crb-content fade-up">
+    <div class="crb-left">
+      <div class="crb-badge">🏙️ New Feature</div>
+      <h2>Rent a Bike Within<br><span>Your City</span></h2>
+      <p>Short city rides made easy. Pin your pickup &amp; drop on the map, get instant fare estimates — perfect for in-city travel in Lucknow, Delhi, Mumbai &amp; more.</p>
+      <div class="crb-cities">
+        <span class="crb-city-pill" onclick="window.location='city-ride.html?city=Lucknow'">📍 Lucknow</span>
+        <span class="crb-city-pill" onclick="window.location='city-ride.html?city=Delhi'">📍 Delhi</span>
+        <span class="crb-city-pill" onclick="window.location='city-ride.html?city=Mumbai'">📍 Mumbai</span>
+        <span class="crb-city-pill" onclick="window.location='city-ride.html?city=Bangalore'">📍 Bangalore</span>
+        <span class="crb-city-pill" onclick="window.location='city-ride.html?city=Jaipur'">📍 Jaipur</span>
+        <span class="crb-city-pill" onclick="window.location='city-ride.html?city=Pune'">📍 Pune</span>
+        <span class="crb-city-pill" onclick="window.location='city-ride.html?city=Goa'">📍 Goa</span>
+        <span class="crb-city-pill" onclick="window.location='city-ride.html?city=Hyderabad'">📍 Hyderabad</span>
+      </div>
+      <a href="city-ride.html" class="crb-cta-btn">🗺️ Book a City Ride →</a>
+    </div>
+    <div class="crb-right">
+      <div class="crb-feature-card">
+        <div class="crb-fc-icon">📌</div>
+        <div class="crb-fc-text">
+          <strong>Pin Pickup &amp; Drop</strong>
+          <span>Click anywhere on the city map</span>
+        </div>
+      </div>
+      <div class="crb-feature-card">
+        <div class="crb-fc-icon">💰</div>
+        <div class="crb-fc-text">
+          <strong>Instant Fare Estimate</strong>
+          <span>Bikes from ₹8/km · Cars from ₹15/km</span>
+        </div>
+      </div>
+      <div class="crb-feature-card">
+        <div class="crb-fc-icon">🚀</div>
+        <div class="crb-fc-text">
+          <strong>Book in 60 Seconds</strong>
+          <span>No calls, no waiting — instant confirmation</span>
+        </div>
+      </div>
+      <div class="crb-feature-card">
+        <div class="crb-fc-icon">🏍️</div>
+        <div class="crb-fc-text">
+          <strong>Bikes, Scooters &amp; Cars</strong>
+          <span>All vehicle types available city-wide</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ── Map Section ─────────────────────────────────────────────────────────── -->
 <section class="map-section" id="map-section">
-  <p class="section-label">Explore India</p>
-  <h2 class="section-title">Find Vehicles Near You</h2>
-  <p class="section-sub">Click a city marker to see all available rides in that location.</p>
-  <div id="india-map"></div>
+  <p class="section-label fade-up">Explore India</p>
+  <h2 class="section-title fade-up">Find Vehicles Near You</h2>
+  <p class="section-sub fade-up">Click a city marker to see all available rides. <a href="city-ride.html" style="color:#ff6a3d;font-weight:600;">Try City Rides 🏙️</a></p>
+  <div id="india-map" class="fade-up"></div>
 </section>
 
 <!-- ── Vehicles Section ────────────────────────────────────────────────────── -->
 <section class="vehicles-section" id="vehicles">
-  <div class="section-header">
+  <div class="section-header fade-up">
     <div>
       <p class="section-label">Browse Fleet</p>
       <h2 class="section-title" style="margin-bottom:0">Available Vehicles</h2>
@@ -335,24 +487,24 @@
     </div>
   </div>
 
-  <div class="filter-tabs" id="filterTabs">
+  <div class="filter-tabs fade-up" id="filterTabs">
     <button class="active" data-type="all" onclick="setTypeFilter('all',this)">All</button>
     <button data-type="Car" onclick="setTypeFilter('Car',this)">🚗 Cars</button>
     <button data-type="Bike" onclick="setTypeFilter('Bike',this)">🏍️ Bikes</button>
     <button data-type="Scooter" onclick="setTypeFilter('Scooter',this)">🛵 Scooters</button>
   </div>
 
-  <div class="vehicle-grid" id="vehicleGrid">
+  <div class="vehicle-grid fade-up" id="vehicleGrid">
     <div class="loading-center"><div class="spinner"></div></div>
   </div>
 </section>
 
 <!-- ── How It Works ────────────────────────────────────────────────────────── -->
 <section class="how-section" id="how">
-  <p class="section-label" style="color:#ff6a3d">Simple Process</p>
-  <h2 class="section-title">How It Works</h2>
-  <p class="section-sub">Four easy steps to your perfect ride</p>
-  <div class="steps">
+  <p class="section-label fade-up" style="color:#ff6a3d">Simple Process</p>
+  <h2 class="section-title fade-up">How It Works</h2>
+  <p class="section-sub fade-up">Four easy steps to your perfect ride</p>
+  <div class="steps fade-up">
     <div class="step"><div class="step-num">1</div><h3>Pick a City</h3><p>Choose from 10+ cities across India using the map or search bar.</p></div>
     <div class="step"><div class="step-num">2</div><h3>Choose Your Ride</h3><p>Browse cars, bikes, and scooters with transparent daily pricing.</p></div>
     <div class="step"><div class="step-num">3</div><h3>Book Instantly</h3><p>Select your dates, create an account, and confirm your booking.</p></div>
@@ -360,11 +512,11 @@
   </div>
 </section>
 
-<!-- ── Why RideIndia ───────────────────────────────────────────────────────── -->
+<!-- ── Why RENT RIDE ───────────────────────────────────────────────────────── -->
 <section class="why-section">
-  <p class="section-label" style="text-align:center">Why Choose Us</p>
-  <h2 class="section-title" style="text-align:center">The RideIndia Difference</h2>
-  <div class="why-grid">
+  <p class="section-label fade-up" style="text-align:center">Why Choose Us</p>
+  <h2 class="section-title fade-up" style="text-align:center">The RENT RIDE Difference</h2>
+  <div class="why-grid fade-up">
     <div class="why-card"><div class="why-icon">💰</div><h3>No Hidden Charges</h3><p>What you see is what you pay. Transparent pricing with all-inclusive daily rates.</p></div>
     <div class="why-card"><div class="why-icon">⚡</div><h3>Instant Confirmation</h3><p>Book online in under 2 minutes. No calls, no waiting — instant booking confirmation.</p></div>
     <div class="why-card"><div class="why-icon">🛡️</div><h3>Verified Vehicles</h3><p>Every vehicle is regularly inspected and insured for your safety and peace of mind.</p></div>
@@ -372,35 +524,60 @@
   </div>
 </section>
 
+<!-- ── Contact Us ──────────────────────────────────────────────────────────── -->
+<section class="contact-section" id="contact" style="background:#f9fafb; padding:80px 0;">
+  <p class="section-label fade-up" style="text-align:center">Get In Touch</p>
+  <h2 class="section-title fade-up" style="text-align:center">Contact Support</h2>
+  
+  <div class="contact-container fade-up" style="max-width:1000px; margin:40px auto 0; padding:0 6%; display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:30px;">
+    <!-- Phone -->
+    <div class="contact-card" style="background:#fff; border-radius:var(--radius); padding:40px 30px; text-align:center; box-shadow:var(--shadow-sm); border:1px solid var(--gray-light); transition:transform 0.2s, box-shadow 0.2s;">
+      <div class="contact-icon" style="width:64px; height:64px; background:linear-gradient(135deg, var(--primary-light), #fce7dc); color:var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.8rem; margin:0 auto 20px;">📞</div>
+      <h3 style="font-size:1.2rem; font-weight:800; color:var(--dark2); margin-bottom:12px;">Phone Support</h3>
+      <p style="color:var(--gray); font-size:0.95rem; line-height:1.5;">Available 24/7 for booking assistance and on-road support.</p>
+      <a href="tel:10800000000" style="display:block; margin-top:12px; font-size:1.1rem; color:var(--primary); font-weight:700; text-decoration:none;">10800000000</a>
+    </div>
+    
+    <!-- Location -->
+    <div class="contact-card" style="background:#fff; border-radius:var(--radius); padding:40px 30px; text-align:center; box-shadow:var(--shadow-sm); border:1px solid var(--gray-light); transition:transform 0.2s, box-shadow 0.2s;">
+      <div class="contact-icon" style="width:64px; height:64px; background:linear-gradient(135deg, var(--primary-light), #fce7dc); color:var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.8rem; margin:0 auto 20px;">📍</div>
+      <h3 style="font-size:1.2rem; font-weight:800; color:var(--dark2); margin-bottom:12px;">Headquarters</h3>
+      <p style="color:var(--gray); font-size:0.95rem; line-height:1.5;">Visit our main office for corporate inquiries and partnerships.</p>
+      <p style="margin-top:12px; font-weight:600; color:var(--dark2); font-size:0.95rem;">XXXXXXXXXXXXXXXXXXXX</p>
+    </div>
+    
+    <!-- GitHub -->
+    <div class="contact-card" style="background:#fff; border-radius:var(--radius); padding:40px 30px; text-align:center; box-shadow:var(--shadow-sm); border:1px solid var(--gray-light); transition:transform 0.2s, box-shadow 0.2s;">
+      <div class="contact-icon" style="width:64px; height:64px; background:linear-gradient(135deg, var(--primary-light), #fce7dc); color:var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.8rem; margin:0 auto 20px;">💻</div>
+      <h3 style="font-size:1.2rem; font-weight:800; color:var(--dark2); margin-bottom:12px;">Open Source</h3>
+      <p style="color:var(--gray); font-size:0.95rem; line-height:1.5;">Check out our codebase and contribute to the RENT RIDE project.</p>
+      <a href="https://github.com/Prakhar144" target="_blank" style="display:block; margin-top:12px; color:var(--primary); font-weight:700; text-decoration:none;">@Prakhar144</a>
+    </div>
+  </div>
+</section>
+
 <!-- ── Footer ──────────────────────────────────────────────────────────────── -->
 <footer class="site-footer">
   <div class="footer-grid">
     <div class="footer-brand">
-      <div class="logo">Ride<span style="color:#fff">India</span> 🚗</div>
-      <p>Self-drive car, bike &amp; scooter rentals across India. Freedom on your terms.</p>
+      <div class="logo">RENT<span>RIDE</span> 🚗</div>
+      <p>Self-drive car, bike &amp; scooter rentals across 11+ Indian cities. Freedom on your terms.</p>
     </div>
     <div class="footer-col">
-      <h4>Quick Links</h4>
-      <a href="index.html">Home</a>
+      <h4>Explore</h4>
       <a href="vehicles.html">All Vehicles</a>
-      <a href="#how">How It Works</a>
+      <a href="city-ride.html">City Rides</a>
+      <a href="index.html#map-section">Locations</a>
     </div>
     <div class="footer-col">
       <h4>Account</h4>
       <a href="login.html">Sign In</a>
-      <a href="login.html#register">Register</a>
-      <a href="profile.html">My Bookings</a>
-    </div>
-    <div class="footer-col">
-      <h4>Cities</h4>
-      <a href="#">Delhi</a>
-      <a href="#">Mumbai</a>
-      <a href="#">Bangalore</a>
-      <a href="#">Goa</a>
+      <a href="profile.html">My Bookings</a>`n      <a href="contact.html">Contact Us</a>
     </div>
   </div>
   <div class="footer-bottom">
-    <p><strong>RideIndia</strong> — © 2026 All rights reserved.</p>
+    <p><strong>RENT RIDE</strong> — © 2026 All rights reserved.</p>
+    <p>Made with ❤️ in India</p>
   </div>
 </footer>
 
@@ -453,16 +630,54 @@
   const API = '';  // same origin, backend serves frontend
 
   const cities = [
-    { name:'Delhi',     lat:28.7041, lng:77.1025 },
-    { name:'Mumbai',    lat:19.0760, lng:72.8777 },
-    { name:'Bangalore', lat:12.9716, lng:77.5946 },
-    { name:'Chennai',   lat:13.0827, lng:80.2707 },
-    { name:'Hyderabad', lat:17.3850, lng:78.4867 },
-    { name:'Kolkata',   lat:22.5726, lng:88.3639 },
-    { name:'Pune',      lat:18.5204, lng:73.8567 },
-    { name:'Jaipur',    lat:26.9124, lng:75.7873 },
-    { name:'Goa',       lat:15.2993, lng:74.1240 },
-    { name:'Ahmedabad', lat:23.0225, lng:72.5714 }
+    { name: 'Lucknow',   lat: 26.8467, lng: 80.9462 },
+    { name: 'Delhi',     lat: 28.7041, lng: 77.1025 },
+    { name: 'Mumbai',    lat: 19.0760, lng: 72.8777 },
+    { name: 'Bangalore', lat: 12.9716, lng: 77.5946 },
+    { name: 'Hyderabad', lat: 17.3850, lng: 78.4867 },
+    { name: 'Jaipur',    lat: 26.9124, lng: 75.7873 },
+    { name: 'Pune',      lat: 18.5204, lng: 73.8567 },
+    { name: 'Goa',       lat: 15.2993, lng: 74.1240 },
+    { name: 'Chennai',   lat: 13.0827, lng: 80.2707 },
+    { name: 'Kolkata',   lat: 22.5726, lng: 88.3639 },
+    { name: 'Ahmedabad', lat: 23.0225, lng: 72.5714 },
+    { name: 'Surat',     lat: 21.1702, lng: 72.8311 },
+    { name: 'Kanpur',    lat: 26.4499, lng: 80.3319 },
+    { name: 'Nagpur',    lat: 21.1458, lng: 79.0882 },
+    { name: 'Indore',    lat: 22.7196, lng: 75.8577 },
+    { name: 'Thane',     lat: 19.2183, lng: 72.9781 },
+    { name: 'Bhopal',    lat: 23.2599, lng: 77.4126 },
+    { name: 'Visakhapatnam', lat: 17.6868, lng: 83.2185 },
+    { name: 'Patna',     lat: 25.5941, lng: 85.1376 },
+    { name: 'Vadodara',  lat: 22.3072, lng: 73.1812 },
+    { name: 'Ghaziabad', lat: 28.6692, lng: 77.4538 },
+    { name: 'Ludhiana',  lat: 30.9010, lng: 75.8523 },
+    { name: 'Agra',      lat: 27.1767, lng: 78.0081 },
+    { name: 'Nashik',    lat: 20.0059, lng: 73.7629 },
+    { name: 'Faridabad', lat: 28.4089, lng: 77.3178 },
+    { name: 'Meerut',    lat: 28.9845, lng: 77.7064 },
+    { name: 'Rajkot',    lat: 22.3039, lng: 70.8022 },
+    { name: 'Varanasi',  lat: 25.3176, lng: 82.9739 },
+    { name: 'Srinagar',  lat: 34.0837, lng: 74.7973 },
+    { name: 'Amritsar',  lat: 31.6340, lng: 74.8723 },
+    { name: 'Navi Mumbai', lat: 19.0330, lng: 73.0297 },
+    { name: 'Prayagraj', lat: 25.4358, lng: 81.8463 },
+    { name: 'Ranchi',    lat: 23.3441, lng: 85.3096 },
+    { name: 'Howrah',    lat: 22.5958, lng: 88.2636 },
+    { name: 'Coimbatore',lat: 11.0168, lng: 76.9558 },
+    { name: 'Jabalpur',  lat: 23.1815, lng: 79.9864 },
+    { name: 'Gwalior',   lat: 26.2183, lng: 78.1828 },
+    { name: 'Vijayawada',lat: 16.5062, lng: 80.6480 },
+    { name: 'Jodhpur',   lat: 26.2389, lng: 73.0243 },
+    { name: 'Madurai',   lat: 9.9252, lng: 78.1198 },
+    { name: 'Raipur',    lat: 21.2514, lng: 81.6296 },
+    { name: 'Kota',      lat: 25.2138, lng: 75.8648 },
+    { name: 'Guwahati',  lat: 26.1445, lng: 91.7362 },
+    { name: 'Chandigarh',lat: 30.7333, lng: 76.7794 },
+    { name: 'Solapur',   lat: 17.6599, lng: 75.9064 },
+    { name: 'Mysuru',    lat: 12.2958, lng: 76.6394 },
+    { name: 'Gurgaon',   lat: 28.4595, lng: 77.0266 },
+    { name: 'Noida',     lat: 28.5355, lng: 77.3910 }
   ];
 
   let allVehicles = [];
@@ -550,7 +765,15 @@
   document.getElementById('endDate').value = fmt(tomorrow);
 
   // ── Leaflet Map ───────────────────────────────────────────────────────────
-  const map = L.map('india-map').setView([22.5, 79], 5);
+  const indiaBounds = [
+    [6.5, 68.0], // Southwest coordinates (approx)
+    [36.5, 97.5] // Northeast coordinates (approx)
+  ];
+  const map = L.map('india-map', {
+    maxBounds: indiaBounds,
+    maxBoundsViscosity: 1.0,
+    minZoom: 5
+  }).setView([22.5, 79], 5);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors', maxZoom: 12
   }).addTo(map);
@@ -564,10 +787,13 @@
   cities.forEach(c => {
     const marker = L.marker([c.lat, c.lng], { icon: customIcon }).addTo(map);
     marker.bindPopup(`
-      <div style="font-family:Inter,sans-serif;min-width:140px;">
-        <strong style="font-size:1rem;">${c.name}</strong><br/>
-        <small style="color:#6b7280;">Click to see vehicles</small><br/>
-        <button onclick="selectCity('${c.name}')" style="margin-top:8px;width:100%;padding:7px 12px;border:none;background:#ff6a3d;color:#fff;border-radius:6px;cursor:pointer;font-weight:600;">View Rides</button>
+      <div style="font-family:Inter,sans-serif;min-width:150px;">
+        <strong style="font-size:1rem;">📍 ${c.name}</strong><br/>
+        <small style="color:#6b7280;">Self-drive &amp; city rides available</small>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px;">
+          <button onclick="selectCity('${c.name}')" style="padding:7px 12px;border:none;background:#14213d;color:#fff;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.82rem;">🚗 View All Rides</button>
+          <button onclick="window.location='city-ride.html?city=${c.name}'" style="padding:7px 12px;border:none;background:#ff6a3d;color:#fff;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.82rem;">🏙️ City Ride</button>
+        </div>
       </div>
     `);
   });
@@ -767,9 +993,17 @@
   }
 
   // ── Hamburger ─────────────────────────────────────────────────────────────
+  // Sticky header shadow
+  window.addEventListener('scroll', () => { document.querySelector('.site-header')?.classList.toggle('scrolled', window.scrollY > 10); });
   document.getElementById('hamburger').addEventListener('click', () => {
     document.getElementById('siteNav').classList.toggle('open');
   });
+
+  // ── Scroll Reveal ──────────────────────────────────────────────────────────
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); revealObserver.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.fade-up').forEach(el => revealObserver.observe(el));
 
   // ── Init ──────────────────────────────────────────────────────────────────
   checkAuth();

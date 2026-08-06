@@ -1,18 +1,16 @@
-const router   = require('express').Router();
-const crypto   = require('crypto');
+const router = require('express').Router();
+const crypto = require('crypto');
 const Razorpay = require('razorpay');
 const { Booking, Vehicle } = require('../models');
 const { requireAuth } = require('./middleware');
 
-const RZP_KEY_ID     = process.env.RAZORPAY_KEY_ID     || 'rzp_test_TCgHI0c0V67Zzf';
-const RZP_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'YOUR_RAZORPAY_KEY_SECRET';
+const RZP_KEY_ID = process.env.RAZORPAY_KEY_ID || 'rzp_test_TCgHI0c0V67Zzf';
+const RZP_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'F0rwq6yOfXKaPypwyIlmZrwI';
 
-if (RZP_KEY_SECRET === 'YOUR_RAZORPAY_KEY_SECRET') {
-  console.warn('⚠️  [Razorpay] Key secret is not set! Set RAZORPAY_KEY_SECRET env var or update payments.js line 8.');
-}
+
 
 const razorpay = new Razorpay({
-  key_id:     RZP_KEY_ID,
+  key_id: RZP_KEY_ID,
   key_secret: RZP_KEY_SECRET,
 });
 
@@ -39,26 +37,26 @@ router.post('/create-order', requireAuth, async (req, res) => {
     const s = new Date(start_date), e = new Date(end_date);
     if (e <= s) return res.status(400).json({ error: 'end_date must be after start_date' });
 
-    const days        = Math.ceil((e - s) / (1000 * 60 * 60 * 24));
+    const days = Math.ceil((e - s) / (1000 * 60 * 60 * 24));
     const total_price = days * vehicle.price_day;
 
     // Check for conflicting confirmed bookings
     const conflict = await Booking.findOne({
-      vehicle:    vehicle_id,
-      status:     'confirmed',
-      end_date:   { $gt: start_date },
+      vehicle: vehicle_id,
+      status: 'confirmed',
+      end_date: { $gt: start_date },
       start_date: { $lt: end_date },
     });
     if (conflict) return res.status(409).json({ error: 'Vehicle already booked for these dates' });
 
     // Create Razorpay order (amount in paise = price × 100)
     const rzpOrder = await razorpay.orders.create({
-      amount:   total_price * 100,
+      amount: total_price * 100,
       currency: 'INR',
-      receipt:  `receipt_${Date.now()}`,
+      receipt: `receipt_${Date.now()}`,
       notes: {
         vehicle: vehicle.name,
-        city:    vehicle.city,
+        city: vehicle.city,
         start_date,
         end_date,
       },
@@ -66,30 +64,30 @@ router.post('/create-order', requireAuth, async (req, res) => {
 
     // Save booking with awaiting_payment status
     const booking = await Booking.create({
-      user:              req.user.id,
-      vehicle:           vehicle_id,
+      user: req.user.id,
+      vehicle: vehicle_id,
       start_date,
       end_date,
       total_price,
-      status:            'awaiting_payment',
+      status: 'awaiting_payment',
       razorpay_order_id: rzpOrder.id,
     });
 
     res.json({
-      key:        RZP_KEY_ID,
-      order_id:   rzpOrder.id,
-      amount:     rzpOrder.amount,
-      currency:   rzpOrder.currency,
+      key: RZP_KEY_ID,
+      order_id: rzpOrder.id,
+      amount: rzpOrder.amount,
+      currency: rzpOrder.currency,
       booking_id: booking._id,
       vehicle: {
-        name:  vehicle.name,
-        icon:  vehicle.icon,
-        city:  vehicle.city,
+        name: vehicle.name,
+        icon: vehicle.icon,
+        city: vehicle.city,
       },
       days,
       total_price,
     });
-    } catch (err) {
+  } catch (err) {
     const msg = rzpErrMsg(err);
     console.error('[Payment/create-order]', msg);
     res.status(500).json({ error: msg });
@@ -131,15 +129,15 @@ router.post('/verify', requireAuth, async (req, res) => {
     res.json({
       message: 'Payment verified. Booking confirmed!',
       booking: {
-        id:           booking._id,
+        id: booking._id,
         vehicle_name: booking.vehicle?.name,
-        icon:         booking.vehicle?.icon,
-        city:         booking.vehicle?.city,
-        start_date:   booking.start_date,
-        end_date:     booking.end_date,
-        total_price:  booking.total_price,
-        status:       booking.status,
-        payment_id:   booking.razorpay_payment_id,
+        icon: booking.vehicle?.icon,
+        city: booking.vehicle?.city,
+        start_date: booking.start_date,
+        end_date: booking.end_date,
+        total_price: booking.total_price,
+        status: booking.status,
+        payment_id: booking.razorpay_payment_id,
       },
     });
   } catch (err) {
@@ -155,8 +153,8 @@ router.post('/verify', requireAuth, async (req, res) => {
 router.post('/retry-order/:bookingId', requireAuth, async (req, res) => {
   try {
     const booking = await Booking.findOne({
-      _id:    req.params.bookingId,
-      user:   req.user.id,
+      _id: req.params.bookingId,
+      user: req.user.id,
       status: 'awaiting_payment',
     }).populate('vehicle', 'name icon city price_day');
 
@@ -168,10 +166,10 @@ router.post('/retry-order/:bookingId', requireAuth, async (req, res) => {
 
     // Create a fresh Razorpay order
     const rzpOrder = await razorpay.orders.create({
-      amount:   booking.total_price * 100,
+      amount: booking.total_price * 100,
       currency: 'INR',
-      receipt:  `retry_${booking._id}_${Date.now()}`,
-      notes:    { vehicle: vehicle.name, start_date: booking.start_date, end_date: booking.end_date },
+      receipt: `rty_${booking._id}`,
+      notes: { vehicle: vehicle.name, start_date: booking.start_date, end_date: booking.end_date },
     });
 
     // Update the booking with new order id
@@ -179,12 +177,12 @@ router.post('/retry-order/:bookingId', requireAuth, async (req, res) => {
     await booking.save();
 
     res.json({
-      key:        RZP_KEY_ID,
-      order_id:   rzpOrder.id,
-      amount:     rzpOrder.amount,
-      currency:   rzpOrder.currency,
+      key: RZP_KEY_ID,
+      order_id: rzpOrder.id,
+      amount: rzpOrder.amount,
+      currency: rzpOrder.currency,
       booking_id: booking._id,
-      vehicle:    { name: vehicle.name, icon: vehicle.icon, city: vehicle.city },
+      vehicle: { name: vehicle.name, icon: vehicle.icon, city: vehicle.city },
       days,
       total_price: booking.total_price,
     });

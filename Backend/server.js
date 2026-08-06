@@ -43,9 +43,9 @@ app.use((err, req, res, next) => {
   await connectDB();
   await seedDB();
   app.listen(PORT, () => {
-    console.log(`\n🚗  RideIndia backend running at http://localhost:${PORT}`);
+    console.log(`\n🚗  RENT RIDE backend running at http://localhost:${PORT}`);
     console.log(`📦  Database: MongoDB → rentride`);
     console.log(`📁  Serving frontend from ../Frontend`);
-    console.log(`🔑  Admin login: admin@rideindia.com / admin123\n`);
+    console.log(`🔑  Admin login: admin@rentride.com / admin123\n`);
   });
 })();

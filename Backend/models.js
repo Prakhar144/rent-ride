@@ -37,6 +37,11 @@ const bookingSchema = new mongoose.Schema({
   },
   razorpay_order_id:   { type: String, default: null },
   razorpay_payment_id: { type: String, default: null },
+  // ── City Ride fields ──────────────────────────────────────────────────────
+  ride_type:           { type: String, enum: ['daily', 'city_ride'], default: 'daily' },
+  pickup_address:      { type: String, default: null },
+  drop_address:        { type: String, default: null },
+  distance_km:         { type: Number, default: null },
 }, { timestamps: true });
 
 const User    = mongoose.model('User',    userSchema);

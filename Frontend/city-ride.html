@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>City Rides — RENT RIDE | Book In-City Bike & Car Rentals</title>
+<meta name="description" content="Book a city ride in Lucknow, Delhi, Mumbai and 10+ Indian cities. Pin your pickup & drop on the map, get instant fare estimates, and rent a bike or car." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="assets/style.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+  /* ── Page Layout ── */
+  .cr-layout {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 0;
+    min-height: calc(100vh - 68px);
+  }
+
+  /* ── Map Panel ── */
+  .cr-map-panel {
+    position: relative;
+    background: #0f1e36;
+  }
+  #city-map {
+    position: sticky;
+    top: 68px;
+    height: calc(100vh - 68px);
+    width: 100%;
+  }
+  #city-map.selecting-mode {
+    cursor: crosshair !important;
+  }
+  .leaflet-interactive {
+    cursor: inherit !important;
+  }
+
+  /* ── Map Overlay Instructions ── */
+  .map-instructions {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(20,33,61,0.92);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,106,61,0.3);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 50px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    z-index: 1000;
+    white-space: nowrap;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .map-instructions .mi-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #ff6a3d;
+    animation: pulse-dot 1.5s ease infinite;
+  }
+  @keyframes pulse-dot {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.5; transform: scale(1.4); }
+  }
+
+  /* ── Route Line Stats ── */
+  .route-stats {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(20,33,61,0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 14px 24px;
+    z-index: 1000;
+    display: none;
+    gap: 28px;
+    align-items: center;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .route-stats.visible { display: flex; }
+  .rs-item { text-align: center; }
+  .rs-val { font-size: 1.2rem; font-weight: 800; color: #ff6a3d; }
+  .rs-lbl { font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+  .rs-divider { width: 1px; height: 36px; background: rgba(255,255,255,0.1); }
+
+  /* ── Reset Map Button ── */
+  .reset-map-btn {
+    position: absolute;
+    top: 60px;
+    right: 16px;
+    z-index: 1000;
+    background: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #dc2626;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    display: none;
+    transition: all 0.2s;
+  }
+  .reset-map-btn:hover { background: #fef2f2; transform: translateY(-1px); }
+  .reset-map-btn.visible { display: block; }
+
+  /* ── Right Panel ── */
+  .cr-sidebar {
+    background: #f7f8fa;
+    border-left: 1px solid #e5e7eb;
+    overflow-y: auto;
+    max-height: calc(100vh - 68px);
+    position: sticky;
+    top: 68px;
+  }
+
+  /* ── City Selector ── */
+  .city-selector-wrap {
+    background: linear-gradient(135deg, #14213d 0%, #1f3a63 100%);
+    padding: 24px 24px 20px;
+  }
+  .city-selector-wrap h2 {
+    color: #fff;
+    font-size: 1.3rem;
+    font-weight: 800;
+    margin-bottom: 4px;
+    letter-spacing: -0.3px;
+  }
+  .city-selector-wrap p {
+    color: #94a3b8;
+    font-size: 0.82rem;
+    margin-bottom: 16px;
+  }
+  .city-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .city-pill {
+    padding: 7px 16px;
+    border-radius: 20px;
+    border: 1.5px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.07);
+    color: #94a3b8;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .city-pill:hover { background: rgba(255,106,61,0.2); border-color: #ff6a3d; color: #ff6a3d; }
+  .city-pill.active { background: #ff6a3d; border-color: #ff6a3d; color: #fff; }
+
+  /* ── Sidebar Section ── */
+  .cr-section {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e5e7eb;
+    padding: 20px;
+    margin: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .cr-section h3 {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: #14213d;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  /* ── Location Rows ── */
+  .location-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f1f3f5;
+  }
+  .location-row:last-child { border: none; }
+  .loc-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    flex-shrink: 0; margin-top: 5px;
+  }
+  .loc-dot.green { background: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,0.15); }
+  .loc-dot.red   { background: #dc2626; box-shadow: 0 0 0 3px rgba(220,38,38,0.15); }
+  .loc-info { flex: 1; }
+  .loc-label { font-size: 0.7rem; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+  .loc-addr {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #14213d;
+    line-height: 1.4;
+    min-height: 20px;
+  }
+  .loc-addr.placeholder { color: #d1d5db; font-style: italic; }
+
+  /* ── Connector between locations ── */
+  .loc-connector {
+    display: flex;
+    align-items: center;
+    padding: 0 0 0 6px;
+    gap: 12px;
+  }
+  .loc-vline {
+    width: 1px;
+    height: 20px;
+    background: repeating-linear-gradient(to bottom, #e5e7eb, #e5e7eb 4px, transparent 4px, transparent 8px);
+    margin: 0 5.5px;
+  }
+
+  /* ── Ride Type Toggle ── */
+  .ride-type-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .ride-type-btn {
+    padding: 12px;
+    border-radius: 10px;
+    border: 1.5px solid #e5e7eb;
+    background: #fff;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .ride-type-btn.active {
+    background: #fff3ec;
+    border-color: #ff6a3d;
+    color: #ff6a3d;
+  }
+  .ride-type-btn .rtb-icon { font-size: 1.4rem; margin-bottom: 5px; }
+  .ride-type-btn .rtb-label { font-size: 0.78rem; font-weight: 700; color: #14213d; }
+  .ride-type-btn.active .rtb-label { color: #ff6a3d; }
+  .ride-type-btn .rtb-desc { font-size: 0.68rem; color: #9ca3af; margin-top: 2px; }
+
+  /* ── Vehicle Type Filter ── */
+  .vtype-filter {
+    display: flex;
+    gap: 6px;
+  }
+  .vtype-btn {
+    flex: 1; padding: 9px 8px; border-radius: 8px;
+    border: 1.5px solid #e5e7eb; background: #fff;
+    font-size: 0.8rem; font-weight: 600; color: #6b7280;
+    cursor: pointer; transition: all 0.2s; text-align: center;
+  }
+  .vtype-btn.active { background: #14213d; color: #fff; border-color: #14213d; }
+  .vtype-btn:hover:not(.active) { border-color: #ff6a3d; color: #ff6a3d; }
+
+  /* ── Fare Card ── */
+  .fare-card {
+    background: linear-gradient(135deg, #fff3ec 0%, #ffe8dc 100%);
+    border: 1.5px solid #ffcbb0;
+    border-radius: 14px;
+    padding: 18px;
+    margin: 16px;
+  }
+  .fare-card-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 14px;
+  }
+  .fare-card-header h3 { font-size: 0.88rem; font-weight: 800; color: #14213d; }
+  .fare-badge { background: #ff6a3d; color: #fff; font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+
+  .fare-row { display: flex; justify-content: space-between; font-size: 0.82rem; padding: 4px 0; color: #6b7280; }
+  .fare-total { display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: 800; color: #14213d; padding-top: 10px; border-top: 1px solid #ffcbb0; margin-top: 8px; }
+  .fare-total span:last-child { color: #ff6a3d; }
+
+  .fare-placeholder {
+    text-align: center;
+    padding: 20px 0;
+    color: #9ca3af;
+    font-size: 0.85rem;
+  }
+  .fare-placeholder .fp-icon { font-size: 2rem; margin-bottom: 8px; }
+
+  /* ── Vehicles List ── */
+  .vehicles-wrap { padding: 0 16px 16px; }
+  .vehicles-wrap h3 {
+    font-size: 0.9rem; font-weight: 800; color: #14213d;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .cr-vehicle-card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    padding: 14px;
+    margin-bottom: 10px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .cr-vehicle-card:hover { border-color: #ff6a3d; box-shadow: 0 4px 16px rgba(255,106,61,0.12); transform: translateY(-1px); }
+  .cr-vehicle-icon { font-size: 2.2rem; background: linear-gradient(135deg, #fff3ec, #fce7dc); border-radius: 10px; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .cr-vehicle-info { flex: 1; }
+  .cr-vehicle-name { font-size: 0.9rem; font-weight: 700; color: #14213d; margin-bottom: 3px; }
+  .cr-vehicle-meta { font-size: 0.76rem; color: #6b7280; display: flex; gap: 8px; flex-wrap: wrap; }
+  .cr-vehicle-price { text-align: right; }
+  .cr-vehicle-rate { font-size: 1rem; font-weight: 800; color: #ff6a3d; }
+  .cr-vehicle-rate small { font-size: 0.7rem; color: #9ca3af; font-weight: 400; }
+  .cr-vehicle-est { font-size: 0.72rem; color: #16a34a; font-weight: 600; margin-top: 2px; }
+  .cr-book-btn {
+    padding: 7px 14px; background: #14213d; color: #fff;
+    border: none; border-radius: 8px; font-size: 0.78rem; font-weight: 700;
+    cursor: pointer; transition: all 0.2s; margin-top: 6px; width: 100%;
+    white-space: nowrap;
+  }
+  .cr-book-btn:hover { background: #1f3a63; }
+
+  .no-vehicles-msg { text-align: center; padding: 24px; color: #9ca3af; font-size: 0.85rem; }
+
+  /* ── Date row ── */
+  .date-mini-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .date-mini-row .form-group { margin-bottom: 0; }
+  .form-group { margin-bottom: 12px; }
+  .form-label { display: block; font-size: 0.72rem; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+  .form-input {
+    width: 100%; border: 1.5px solid #e5e7eb; border-radius: 8px;
+    padding: 9px 12px; font-size: 0.88rem; font-weight: 500;
+    font-family: 'Inter', sans-serif; color: #14213d;
+    background: #fff; transition: border-color 0.2s;
+    outline: none;
+  }
+  .form-input:focus { border-color: #ff6a3d; }
+
+  /* ── CTA Button ── */
+  .cr-cta-btn {
+    display: block; width: calc(100% - 32px); margin: 0 16px 16px;
+    padding: 15px; background: linear-gradient(135deg, #ff6a3d, #e2531f);
+    color: #fff; border: none; border-radius: 12px;
+    font-size: 1rem; font-weight: 800; cursor: pointer;
+    text-align: center; transition: all 0.2s;
+    box-shadow: 0 4px 16px rgba(255,106,61,0.35);
+    font-family: 'Inter', sans-serif;
+  }
+  .cr-cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255,106,61,0.45); }
+  .cr-cta-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* ── How to use banner ── */
+  .how-to-use {
+    background: #fff;
+    margin: 16px;
+    border-radius: 14px;
+    border: 1px solid #e5e7eb;
+    padding: 16px;
+  }
+  .how-to-use h3 { font-size: 0.82rem; font-weight: 800; color: #14213d; margin-bottom: 10px; }
+  .htu-steps { display: flex; flex-direction: column; gap: 8px; }
+  .htu-step { display: flex; align-items: center; gap: 10px; font-size: 0.78rem; color: #6b7280; }
+  .htu-num { width: 20px; height: 20px; border-radius: 50%; background: #ff6a3d; color: #fff; font-size: 0.7rem; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+  /* ── Fare pricing table ── */
+  .fare-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+  .fare-table th { background: #f7f8fa; padding: 7px 10px; text-align: left; font-weight: 700; color: #6b7280; }
+  .fare-table td { padding: 7px 10px; border-bottom: 1px solid #f1f3f5; }
+  .fare-table tr:last-child td { border: none; }
+
+  /* ── Sticky CTA ── */
+  .cr-sticky-bottom {
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+    border-top: 1px solid #e5e7eb;
+    padding: 12px 16px;
+    z-index: 10;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .cr-layout { grid-template-columns: 1fr; }
+    .cr-map-panel { height: 400px; }
+    #city-map { height: 400px; position: relative; top: 0; }
+    .cr-sidebar { max-height: none; position: static; }
+    .route-stats { bottom: 16px; }
+  }
+  @media (max-width: 480px) {
+    .city-selector-wrap { padding: 18px 16px 16px; }
+    .cr-section { margin: 12px; padding: 16px; }
+    .fare-card { margin: 12px; }
+    .vehicles-wrap { padding: 0 12px 12px; }
+    .cr-cta-btn { width: calc(100% - 24px); margin: 0 12px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Header ─────────────────────────────────────────────────────────────── -->
+<header class="site-header">
+  <div class="logo"><a href="index.html">RENT<span>RIDE</span> 🚗</a></div>
+  <nav class="site-nav" id="siteNav">
+    <a href="index.html">Home</a>
+    <a href="vehicles.html">Vehicles</a>
+    <a href="city-ride.html" class="active">City Rides</a>
+    <a href="contact.html">Contact</a>
+    <a href="profile.html" id="navProfile" style="display:none;">Profile</a>
+    <a href="login.html" class="nav-btn" id="navLogin">Sign In</a>
+  </nav>
+  <button class="hamburger" id="hamburger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</header>
+
+<!-- ── Main Layout ─────────────────────────────────────────────────────────── -->
+<div class="cr-layout">
+
+  <!-- LEFT: Map Panel -->
+  <div class="cr-map-panel">
+    <div class="map-instructions" id="mapInstructions">
+      <div class="mi-dot"></div>
+      <span id="mapHint">Select a city to start</span>
+    </div>
+    <button class="reset-map-btn" id="resetMapBtn" onclick="resetPins()">↺ Reset Pins</button>
+    <div id="city-map"></div>
+    <div class="route-stats" id="routeStats">
+      <div class="rs-item">
+        <div class="rs-val" id="rsDistance">—</div>
+        <div class="rs-lbl">Distance</div>
+      </div>
+      <div class="rs-divider"></div>
+      <div class="rs-item">
+        <div class="rs-val" id="rsTime">—</div>
+        <div class="rs-lbl">Est. Time</div>
+      </div>
+      <div class="rs-divider"></div>
+      <div class="rs-item">
+        <div class="rs-val" id="rsFare">—</div>
+        <div class="rs-lbl">Est. Fare</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Sidebar -->
+  <aside class="cr-sidebar" id="crSidebar">
+
+    <!-- City Selector -->
+    <div class="city-selector-wrap">
+      <h2>🏙️ City Rides</h2>
+      <p>Pick up &amp; drop within your city — bikes, scooters &amp; cabs</p>
+      <div class="city-pills" id="cityPills"></div>
+    </div>
+
+    <!-- How to Use -->
+    <div class="how-to-use">
+      <h3>📍 How to Pin Your Route</h3>
+      <div class="htu-steps">
+        <div class="htu-step"><div class="htu-num">1</div><span>Select your city above</span></div>
+        <div class="htu-step"><div class="htu-num">2</div><span>Click on map to set <strong>Pickup</strong> point 🟢</span></div>
+        <div class="htu-step"><div class="htu-num">3</div><span>Click again to set <strong>Drop</strong> point 🔴</span></div>
+        <div class="htu-step"><div class="htu-num">4</div><span>Choose vehicle type &amp; book!</span></div>
+      </div>
+    </div>
+
+    <!-- Locations Display -->
+    <div class="cr-section">
+      <h3>🗺️ Your Route</h3>
+      <div class="location-row">
+        <div class="loc-dot green"></div>
+        <div class="loc-info">
+          <div class="loc-label">Pickup Point</div>
+          <div class="loc-addr placeholder" id="pickupAddr">Click on map to set pickup</div>
+        </div>
+      </div>
+      <div class="loc-vline" style="margin-left:5px;"></div>
+      <div class="location-row">
+        <div class="loc-dot red"></div>
+        <div class="loc-info">
+          <div class="loc-label">Drop Point</div>
+          <div class="loc-addr placeholder" id="dropAddr">Click on map to set drop</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ride Type -->
+    <div class="cr-section">
+      <h3>🚦 Ride Type</h3>
+      <div class="ride-type-toggle">
+        <button class="ride-type-btn active" id="rideTypeCity" onclick="setRideType('city')">
+          <div class="rtb-icon">🏙️</div>
+          <div class="rtb-label">City Ride</div>
+          <div class="rtb-desc">Per km pricing</div>
+        </button>
+        <button class="ride-type-btn" id="rideTypeDay" onclick="setRideType('day')">
+          <div class="rtb-icon">📅</div>
+          <div class="rtb-label">Full Day</div>
+          <div class="rtb-desc">Flat daily rate</div>
+        </button>
+      </div>
+
+      <!-- Full Day Date Picker (hidden by default) -->
+      <div id="dayPickerWrap" style="display:none; margin-top:14px;">
+        <div class="date-mini-row">
+          <div class="form-group">
+            <label class="form-label">📅 Pickup Date</label>
+            <input type="date" class="form-input" id="crStartDate" onchange="updateFare()" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">📅 Return Date</label>
+            <input type="date" class="form-input" id="crEndDate" onchange="updateFare()" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vehicle Type Filter -->
+    <div class="cr-section">
+      <h3>🚗 Vehicle Type</h3>
+      <div class="vtype-filter">
+        <button class="vtype-btn active" onclick="setVehicleType('all', this)">All</button>
+        <button class="vtype-btn" onclick="setVehicleType('Bike', this)">🏍️ Bike</button>
+        <button class="vtype-btn" onclick="setVehicleType('Scooter', this)">🛵 Scooter</button>
+        <button class="vtype-btn" onclick="setVehicleType('Car', this)">🚗 Car</button>
+      </div>
+    </div>
+
+    <!-- Fare Estimate -->
+    <div class="fare-card" id="fareCard">
+      <div class="fare-card-header">
+        <h3>💰 Fare Estimate</h3>
+        <span class="fare-badge" id="fareBadge">City Ride</span>
+      </div>
+      <div id="fareContent">
+        <div class="fare-placeholder">
+          <div class="fp-icon">📌</div>
+          Pin your pickup &amp; drop on the map to see fare estimate
+        </div>
+      </div>
+    </div>
+
+    <!-- Pricing Reference -->
+    <div class="cr-section">
+      <h3>📊 Pricing Reference</h3>
+      <table class="fare-table">
+        <thead>
+          <tr><th>Vehicle</th><th>Base</th><th>Per KM</th><th>Min Fare</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>🏍️ Bike</td><td>₹30</td><td>₹8/km</td><td>₹40</td></tr>
+          <tr><td>🛵 Scooter</td><td>₹25</td><td>₹7/km</td><td>₹40</td></tr>
+          <tr><td>🚗 Car</td><td>₹50</td><td>₹15/km</td><td>₹80</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Available Vehicles -->
+    <div class="vehicles-wrap" id="vehiclesWrap">
+      <h3 id="vehiclesHeading">🚘 Available in City</h3>
+      <div id="vehiclesList">
+        <div class="no-vehicles-msg">Select a city to see available vehicles</div>
+      </div>
+    </div>
+
+    <!-- Sticky Book CTA -->
+    <div class="cr-sticky-bottom">
+      <button class="cr-cta-btn" id="mainCTABtn" onclick="handleCTA()">
+        🔍 Search Vehicles in City
+      </button>
+    </div>
+
+  </aside>
+</div>
+
+<!-- ── Footer ──────────────────────────────────────────────────────────────── -->
+<footer class="site-footer" style="margin-top:0;">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div class="logo">RENT<span>RIDE</span> 🚗</div>
+      <p>Self-drive car, bike &amp; scooter rentals across 11+ Indian cities. Freedom on your terms.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Explore</h4>
+      <a href="vehicles.html">All Vehicles</a>
+      <a href="city-ride.html">City Rides</a>
+      <a href="index.html#map-section">Locations</a>
+    </div>
+    <div class="footer-col">
+      <h4>Account</h4>
+      <a href="login.html">Sign In</a>
+      <a href="profile.html">My Bookings</a>`n      <a href="contact.html">Contact Us</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p><strong>RENT RIDE</strong> — © 2026 All rights reserved.</p>
+    <p>Made with ❤️ in India</p>
+  </div>
+</footer>
+
+<div id="toast-container"></div>
+
+<script>
+  const API = '';
+
+  // ── City data ────────────────────────────────────────────────────────────────
+  const CITIES = [
+    { name: 'Lucknow',   lat: 26.8467, lng: 80.9462, zoom: 13 },
+    { name: 'Delhi',     lat: 28.7041, lng: 77.1025, zoom: 12 },
+    { name: 'Mumbai',    lat: 19.0760, lng: 72.8777, zoom: 12 },
+    { name: 'Bangalore', lat: 12.9716, lng: 77.5946, zoom: 12 },
+    { name: 'Hyderabad', lat: 17.3850, lng: 78.4867, zoom: 12 },
+    { name: 'Jaipur',    lat: 26.9124, lng: 75.7873, zoom: 13 },
+    { name: 'Pune',      lat: 18.5204, lng: 73.8567, zoom: 13 },
+    { name: 'Goa',       lat: 15.2993, lng: 74.1240, zoom: 12 },
+    { name: 'Chennai',   lat: 13.0827, lng: 80.2707, zoom: 12 },
+    { name: 'Kolkata',   lat: 22.5726, lng: 88.3639, zoom: 12 },
+    { name: 'Ahmedabad', lat: 23.0225, lng: 72.5714, zoom: 13 },
+    { name: 'Surat',     lat: 21.1702, lng: 72.8311, zoom: 13 },
+    { name: 'Kanpur',    lat: 26.4499, lng: 80.3319, zoom: 13 },
+    { name: 'Nagpur',    lat: 21.1458, lng: 79.0882, zoom: 13 },
+    { name: 'Indore',    lat: 22.7196, lng: 75.8577, zoom: 13 },
+    { name: 'Thane',     lat: 19.2183, lng: 72.9781, zoom: 13 },
+    { name: 'Bhopal',    lat: 23.2599, lng: 77.4126, zoom: 13 },
+    { name: 'Visakhapatnam', lat: 17.6868, lng: 83.2185, zoom: 13 },
+    { name: 'Patna',     lat: 25.5941, lng: 85.1376, zoom: 13 },
+    { name: 'Vadodara',  lat: 22.3072, lng: 73.1812, zoom: 13 },
+    { name: 'Ghaziabad', lat: 28.6692, lng: 77.4538, zoom: 13 },
+    { name: 'Ludhiana',  lat: 30.9010, lng: 75.8523, zoom: 13 },
+    { name: 'Agra',      lat: 27.1767, lng: 78.0081, zoom: 13 },
+    { name: 'Nashik',    lat: 20.0059, lng: 73.7629, zoom: 13 },
+    { name: 'Faridabad', lat: 28.4089, lng: 77.3178, zoom: 13 },
+    { name: 'Meerut',    lat: 28.9845, lng: 77.7064, zoom: 13 },
+    { name: 'Rajkot',    lat: 22.3039, lng: 70.8022, zoom: 13 },
+    { name: 'Varanasi',  lat: 25.3176, lng: 82.9739, zoom: 13 },
+    { name: 'Srinagar',  lat: 34.0837, lng: 74.7973, zoom: 13 },
+    { name: 'Amritsar',  lat: 31.6340, lng: 74.8723, zoom: 13 },
+    { name: 'Navi Mumbai', lat: 19.0330, lng: 73.0297, zoom: 13 },
+    { name: 'Prayagraj', lat: 25.4358, lng: 81.8463, zoom: 13 },
+    { name: 'Ranchi',    lat: 23.3441, lng: 85.3096, zoom: 13 },
+    { name: 'Howrah',    lat: 22.5958, lng: 88.2636, zoom: 13 },
+    { name: 'Coimbatore',lat: 11.0168, lng: 76.9558, zoom: 13 },
+    { name: 'Jabalpur',  lat: 23.1815, lng: 79.9864, zoom: 13 },
+    { name: 'Gwalior',   lat: 26.2183, lng: 78.1828, zoom: 13 },
+    { name: 'Vijayawada',lat: 16.5062, lng: 80.6480, zoom: 13 },
+    { name: 'Jodhpur',   lat: 26.2389, lng: 73.0243, zoom: 13 },
+    { name: 'Madurai',   lat: 9.9252, lng: 78.1198, zoom: 13 },
+    { name: 'Raipur',    lat: 21.2514, lng: 81.6296, zoom: 13 },
+    { name: 'Kota',      lat: 25.2138, lng: 75.8648, zoom: 13 },
+    { name: 'Guwahati',  lat: 26.1445, lng: 91.7362, zoom: 13 },
+    { name: 'Chandigarh',lat: 30.7333, lng: 76.7794, zoom: 13 },
+    { name: 'Solapur',   lat: 17.6599, lng: 75.9064, zoom: 13 },
+    { name: 'Mysuru',    lat: 12.2958, lng: 76.6394, zoom: 13 },
+    { name: 'Gurgaon',   lat: 28.4595, lng: 77.0266, zoom: 13 },
+    { name: 'Noida',     lat: 28.5355, lng: 77.3910, zoom: 13 }
+  ];
+
+  // ── Fare model ───────────────────────────────────────────────────────────────
+  const FARE = {
+    Bike:    { base: 30,  perKm: 8,  min: 40  },
+    Scooter: { base: 25,  perKm: 7,  min: 40  },
+    Car:     { base: 50,  perKm: 15, min: 80  },
+    all:     { base: 30,  perKm: 8,  min: 40  },
+  };
+
+  // ── State ────────────────────────────────────────────────────────────────────
+  let selectedCity  = null;
+  let rideType      = 'city';    // 'city' | 'day'
+  let vehicleType   = 'all';
+  let pickupLatLng  = null;
+  let dropLatLng    = null;
+  let allVehicles   = [];
+  let distanceKm    = 0;
+  let pickupMarker  = null;
+  let dropMarker    = null;
+  let routeLine     = null;
+  let mapClickState = 'pickup'; // 'pickup' | 'drop' | 'done'
+
+  // ── Leaflet Map Init ─────────────────────────────────────────────────────────
+  const indiaBounds = [
+    [6.5, 68.0], // Southwest coordinates
+    [36.5, 97.5] // Northeast coordinates
+  ];
+  const map = L.map('city-map', { 
+    zoomControl: true,
+    maxBounds: indiaBounds,
+    maxBoundsViscosity: 1.0,
+    minZoom: 5
+  }).setView([22.5, 79], 5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors', maxZoom: 18
+  }).addTo(map);
+
+  // Custom marker icons
+  const pickupIcon = L.divIcon({
+    className: '',
+    html: `<div style="
+      background:#16a34a; width:18px; height:18px; border-radius:50%;
+      border:3px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,0.3);
+    "></div>
+    <div style="
+      position:absolute; top:-2px; left:-2px; width:22px; height:22px;
+      border-radius:50%; border:2px solid rgba(22,163,74,0.4);
+      animation:ping 1.5s ease infinite;
+    "></div>`,
+    iconSize: [22, 22], iconAnchor: [11, 11],
+  });
+
+  const dropIcon = L.divIcon({
+    className: '',
+    html: `<div style="
+      background:#dc2626; width:18px; height:18px; border-radius:50%;
+      border:3px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,0.3);
+    "></div>
+    <div style="
+      position:absolute; top:-2px; left:-2px; width:22px; height:22px;
+      border-radius:50%; border:2px solid rgba(220,38,38,0.4);
+      animation:ping 1.5s ease infinite;
+    "></div>`,
+    iconSize: [22, 22], iconAnchor: [11, 11],
+  });
+
+  // Add ping keyframe via style tag
+  const pingStyle = document.createElement('style');
+  pingStyle.textContent = `@keyframes ping { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.6);opacity:0} }`;
+  document.head.appendChild(pingStyle);
+
+  // ── Map Click Handler ────────────────────────────────────────────────────────
+  map.on('click', function(e) {
+    if (!selectedCity) {
+      showToast('Please select a city first!', 'error');
+      return;
+    }
+
+    const { lat, lng } = e.latlng;
+
+    if (mapClickState === 'pickup' || mapClickState === 'done') {
+      // Place/replace pickup
+      if (pickupMarker) map.removeLayer(pickupMarker);
+      if (dropMarker)   map.removeLayer(dropMarker);
+      if (routeLine)    map.removeLayer(routeLine);
+      dropLatLng = null;
+      document.getElementById('dropAddr').textContent = 'Click on map to set drop';
+      document.getElementById('dropAddr').classList.add('placeholder');
+
+      pickupLatLng  = [lat, lng];
+      pickupMarker  = L.marker([lat, lng], { icon: pickupIcon }).addTo(map)
+        .bindPopup('<strong style="color:#16a34a">📍 Pickup</strong>').openPopup();
+      mapClickState = 'drop';
+      updateHint();
+      reverseGeocode(lat, lng, 'pickupAddr');
+      document.getElementById('resetMapBtn').classList.add('visible');
+      hideRouteStats();
+      updateFare();
+
+    } else if (mapClickState === 'drop') {
+      // Place drop
+      if (dropMarker) map.removeLayer(dropMarker);
+      if (routeLine)  map.removeLayer(routeLine);
+
+      dropLatLng   = [lat, lng];
+      dropMarker   = L.marker([lat, lng], { icon: dropIcon }).addTo(map)
+        .bindPopup('<strong style="color:#dc2626">📍 Drop</strong>').openPopup();
+      mapClickState = 'done';
+      updateHint();
+      reverseGeocode(lat, lng, 'dropAddr');
+
+      // Draw dashed route line
+      routeLine = L.polyline([pickupLatLng, dropLatLng], {
+        color: '#ff6a3d', weight: 3, dashArray: '8 6', opacity: 0.85,
+      }).addTo(map);
+
+      // Fit bounds
+      map.fitBounds(L.latLngBounds([pickupLatLng, dropLatLng]).pad(0.2));
+
+      // Calculate distance
+      distanceKm = haversineKm(pickupLatLng[0], pickupLatLng[1], lat, lng);
+      showRouteStats();
+      updateFare();
+    }
+  });
+
+  // ── City Pills ───────────────────────────────────────────────────────────────
+  function buildCityPills() {
+    const wrap = document.getElementById('cityPills');
+    wrap.innerHTML = CITIES.map(c => `
+      <button class="city-pill" id="pill-${c.name}" onclick="selectCity('${c.name}')">
+        ${c.name}
+      </button>
+    `).join('');
+  }
+
+  function selectCity(name) {
+    const city = CITIES.find(c => c.name === name);
+    if (!city) return;
+
+    selectedCity = name;
+
+    // Update pills
+    document.querySelectorAll('.city-pill').forEach(p => p.classList.remove('active'));
+    document.getElementById(`pill-${name}`).classList.add('active');
+
+    // Move map
+    map.flyTo([city.lat, city.lng], city.zoom, { duration: 1.2, easeLinearity: 0.3 });
+
+    // Reset pins
+    resetPins();
+
+    // Update hint
+    updateHint();
+
+    // Load vehicles for this city
+    loadVehicles(name);
+
+    // Update CTA
+    updateCTABtn();
+  }
+
+  // ── Hints ────────────────────────────────────────────────────────────────────
+  function updateHint() {
+    const el = document.getElementById('mapHint');
+    const mapEl = document.getElementById('city-map');
+    const dot = document.querySelector('.mi-dot');
+    const instructions = document.getElementById('mapInstructions');
+    
+    if (!selectedCity) {
+      el.innerHTML = 'Select a city to start';
+      mapEl.classList.remove('selecting-mode');
+      dot.style.background = '#ff6a3d';
+      instructions.style.borderColor = 'rgba(255,106,61,0.3)';
+    } else if (mapClickState === 'pickup' || (mapClickState === 'done' && !pickupLatLng)) {
+      el.innerHTML = 'Click map to set <strong style="color:#16a34a;">Pickup Point</strong> 🟢';
+      mapEl.classList.add('selecting-mode');
+      dot.style.background = '#16a34a';
+      instructions.style.borderColor = 'rgba(22,163,74,0.4)';
+    } else if (mapClickState === 'drop') {
+      el.innerHTML = 'Click map to set <strong style="color:#dc2626;">Drop Point</strong> 🔴';
+      mapEl.classList.add('selecting-mode');
+      dot.style.background = '#dc2626';
+      instructions.style.borderColor = 'rgba(220,38,38,0.4)';
+    } else {
+      el.innerHTML = '<strong style="color:#ff6a3d;">✓ Route set!</strong> Choose a vehicle below';
+      mapEl.classList.remove('selecting-mode');
+      dot.style.background = '#ff6a3d';
+      dot.style.animation = 'none'; // Stop pulsing when done
+      instructions.style.borderColor = 'rgba(255,106,61,0.3)';
+    }
+    
+    if (mapClickState !== 'done') {
+      dot.style.animation = 'pulse-dot 1.5s ease infinite';
+    }
+  }
+
+  // ── Reset Pins ───────────────────────────────────────────────────────────────
+  function resetPins() {
+    if (pickupMarker) map.removeLayer(pickupMarker);
+    if (dropMarker)   map.removeLayer(dropMarker);
+    if (routeLine)    map.removeLayer(routeLine);
+    pickupMarker = dropMarker = routeLine = null;
+    pickupLatLng = dropLatLng = null;
+    distanceKm   = 0;
+    mapClickState = 'pickup';
+
+    document.getElementById('pickupAddr').textContent = 'Click on map to set pickup';
+    document.getElementById('pickupAddr').classList.add('placeholder');
+    document.getElementById('dropAddr').textContent   = 'Click on map to set drop';
+    document.getElementById('dropAddr').classList.add('placeholder');
+    document.getElementById('resetMapBtn').classList.remove('visible');
+
+    hideRouteStats();
+    updateFare();
+    updateHint();
+  }
+
+  // ── Reverse Geocode ──────────────────────────────────────────────────────────
+  async function reverseGeocode(lat, lng, elId) {
+    const el = document.getElementById(elId);
+    el.textContent = '…locating…';
+    el.classList.remove('placeholder');
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+        { headers: { 'Accept-Language': 'en' } }
+      );
+      const data = await res.json();
+      const addr = data.address;
+      // Build a short address: road/suburb, city
+      const parts = [
+        addr.road || addr.pedestrian || addr.footway,
+        addr.suburb || addr.neighbourhood || addr.quarter,
+        addr.city || addr.town || addr.county,
+      ].filter(Boolean);
+      el.textContent = parts.slice(0, 2).join(', ') || data.display_name.split(',').slice(0,2).join(',').trim();
+    } catch {
+      el.textContent = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    }
+  }
+
+  // ── Haversine Distance ───────────────────────────────────────────────────────
+  function haversineKm(lat1, lng1, lat2, lng2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 +
+              Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+              Math.sin(dLng/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  // ── Route Stats Overlay ──────────────────────────────────────────────────────
+  function showRouteStats() {
+    const stats = document.getElementById('routeStats');
+    stats.classList.add('visible');
+
+    const fare = calcFare(vehicleType === 'all' ? 'Bike' : vehicleType, distanceKm);
+    document.getElementById('rsDistance').textContent = distanceKm.toFixed(1) + ' km';
+    document.getElementById('rsTime').textContent     = Math.ceil(distanceKm * 3) + ' min';
+    document.getElementById('rsFare').textContent     = '₹' + fare;
+  }
+
+  function hideRouteStats() {
+    document.getElementById('routeStats').classList.remove('visible');
+  }
+
+  // ── Fare Calculation ─────────────────────────────────────────────────────────
+  function calcFare(type, km) {
+    const f = FARE[type] || FARE.Bike;
+    return Math.max(f.min, Math.round(f.base + km * f.perKm));
+  }
+
+  function updateFare() {
+    const el = document.getElementById('fareContent');
+    const badge = document.getElementById('fareBadge');
+    badge.textContent = rideType === 'city' ? 'City Ride' : 'Full Day';
+
+    if (rideType === 'city') {
+      if (!pickupLatLng || !dropLatLng) {
+        el.innerHTML = `
+          <div class="fare-placeholder">
+            <div class="fp-icon">📌</div>
+            Pin your pickup &amp; drop on the map to see fare estimate
+          </div>`;
+        return;
+      }
+
+      const types = vehicleType === 'all' ? ['Bike', 'Scooter', 'Car'] : [vehicleType];
+      el.innerHTML = `
+        <div class="fare-row"><span>Distance</span><span><strong>${distanceKm.toFixed(2)} km</strong></span></div>
+        <div class="fare-row"><span>Est. travel time</span><span>~${Math.ceil(distanceKm * 3)} min</span></div>
+        ${types.map(t => {
+          const f = FARE[t];
+          const fare = calcFare(t, distanceKm);
+          return `<div class="fare-row"><span>${t === 'Bike' ? '🏍️' : t === 'Scooter' ? '🛵' : '🚗'} ${t}</span><span>₹${f.base} + ₹${f.perKm}×${distanceKm.toFixed(1)}km</span></div>
+          <div class="fare-total" style="font-size:0.95rem;margin-bottom:6px;"><span style="font-size:0.82rem;color:#6b7280;">${t} Fare</span><span>₹${fare}</span></div>`;
+        }).join('')}
+      `;
+    } else {
+      // Full day mode
+      const s = document.getElementById('crStartDate').value;
+      const e = document.getElementById('crEndDate').value;
+      if (!s || !e) {
+        el.innerHTML = `<div class="fare-placeholder"><div class="fp-icon">📅</div>Select pickup &amp; return dates</div>`;
+        return;
+      }
+      const days = Math.ceil((new Date(e) - new Date(s)) / 86400000);
+      if (days <= 0) {
+        el.innerHTML = `<div class="fare-placeholder"><div class="fp-icon">⚠️</div>Return date must be after pickup</div>`;
+        return;
+      }
+      const vehicles = getFilteredVehicles();
+      if (vehicles.length === 0) {
+        el.innerHTML = `<div class="fare-placeholder"><div class="fp-icon">🔍</div>No vehicles found for selected filters</div>`;
+        return;
+      }
+      const minPrice = Math.min(...vehicles.map(v => v.price_day));
+      const maxPrice = Math.max(...vehicles.map(v => v.price_day));
+      el.innerHTML = `
+        <div class="fare-row"><span>Duration</span><span><strong>${days} day${days>1?'s':''}</strong></span></div>
+        <div class="fare-row"><span>Daily rate range</span><span>₹${minPrice}–₹${maxPrice}</span></div>
+        <div class="fare-total"><span>Est. Total</span><span>₹${(minPrice*days).toLocaleString('en-IN')}+</span></div>
+      `;
+    }
+  }
+
+  // ── Ride Type Toggle ─────────────────────────────────────────────────────────
+  function setRideType(type) {
+    rideType = type;
+    document.getElementById('rideTypeCity').classList.toggle('active', type === 'city');
+    document.getElementById('rideTypeDay').classList.toggle('active', type === 'day');
+    document.getElementById('dayPickerWrap').style.display = type === 'day' ? 'block' : 'none';
+    updateFare();
+    updateCTABtn();
+  }
+
+  // ── Vehicle Type Filter ──────────────────────────────────────────────────────
+  function setVehicleType(type, btn) {
+    vehicleType = type;
+    document.querySelectorAll('.vtype-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderVehicles();
+    updateFare();
+  }
+
+  // ── Load Vehicles ────────────────────────────────────────────────────────────
+  async function loadVehicles(city) {
+    document.getElementById('vehiclesList').innerHTML = `<div class="no-vehicles-msg">⏳ Loading vehicles…</div>`;
+    document.getElementById('vehiclesHeading').textContent = `🚘 Available in ${city}`;
+    try {
+      const res  = await fetch(`${API}/api/vehicles?city=${encodeURIComponent(city)}`);
+      const data = await res.json();
+      allVehicles = (data.vehicles || []).filter(v => v.available !== false);
+      renderVehicles();
+    } catch {
+      // Fallback: try fetching all and filter client-side
+      try {
+        const res  = await fetch(`${API}/api/vehicles`);
+        const data = await res.json();
+        allVehicles = (data.vehicles || []).filter(v => v.city === city && v.available !== false);
+        renderVehicles();
+      } catch {
+        document.getElementById('vehiclesList').innerHTML =
+          `<div class="no-vehicles-msg">⚠️ Could not load vehicles. Make sure the server is running.</div>`;
+      }
+    }
+  }
+
+  function getFilteredVehicles() {
+    return allVehicles.filter(v =>
+      vehicleType === 'all' || v.type === vehicleType
+    );
+  }
+
+  function renderVehicles() {
+    const list = document.getElementById('vehiclesList');
+    const filtered = getFilteredVehicles();
+    updateFare();
+
+    if (!selectedCity) {
+      list.innerHTML = `<div class="no-vehicles-msg">Select a city to see available vehicles</div>`;
+      return;
+    }
+    if (filtered.length === 0) {
+      list.innerHTML = `<div class="no-vehicles-msg">🔍 No ${vehicleType === 'all' ? '' : vehicleType + ' '}vehicles found in ${selectedCity}.<br>Try a different type or city.</div>`;
+      return;
+    }
+
+    list.innerHTML = filtered.map(v => {
+      const fare = rideType === 'city' && distanceKm > 0
+        ? `~₹${calcFare(v.type, distanceKm)} est. fare`
+        : '';
+      return `
+        <div class="cr-vehicle-card" onclick="bookVehicle(${JSON.stringify(v).replace(/"/g,'&quot;')})">
+          <div class="cr-vehicle-icon">${v.icon || '🚗'}</div>
+          <div class="cr-vehicle-info">
+            <div class="cr-vehicle-name">${v.name}</div>
+            <div class="cr-vehicle-meta">
+              <span>⛽ ${v.fuel || 'Petrol'}</span>
+              <span>⚙️ ${v.transmission || 'Manual'}</span>
+              ${v.seats ? `<span>👥 ${v.seats} seats</span>` : ''}
+            </div>
+            ${fare ? `<div style="font-size:0.72rem;color:#16a34a;font-weight:600;margin-top:3px;">${fare}</div>` : ''}
+          </div>
+          <div class="cr-vehicle-price">
+            <div class="cr-vehicle-rate">₹${v.price_day}<small>/day</small></div>
+            <button class="cr-book-btn" onclick="event.stopPropagation(); bookVehicle(${JSON.stringify(v).replace(/"/g,'&quot;')})">
+              Book →
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ── Book Vehicle ─────────────────────────────────────────────────────────────
+  function bookVehicle(vehicle) {
+    const id = vehicle._id || vehicle.id;
+    let url  = `booking.html?id=${id}`;
+    if (rideType === 'day') {
+      const s = document.getElementById('crStartDate').value;
+      const e = document.getElementById('crEndDate').value;
+      if (s) url += `&start=${s}`;
+      if (e) url += `&end=${e}`;
+    }
+    window.location.href = url;
+  }
+
+  // ── CTA Button ───────────────────────────────────────────────────────────────
+  function updateCTABtn() {
+    const btn = document.getElementById('mainCTABtn');
+    if (!selectedCity) {
+      btn.textContent = '🔍 Search Vehicles in City';
+      btn.disabled    = false;
+    } else {
+      btn.textContent = `🚘 See All Vehicles in ${selectedCity}`;
+      btn.disabled    = false;
+    }
+  }
+
+  function handleCTA() {
+    if (!selectedCity) {
+      showToast('Please select a city first!', 'error');
+      return;
+    }
+    // Scroll to vehicles list
+    document.getElementById('vehiclesWrap').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // ── Toast ────────────────────────────────────────────────────────────────────
+  function showToast(msg, type = '') {
+    const t = document.createElement('div');
+    t.className = `toast${type ? ' toast-'+type : ''}`;
+    t.textContent = msg;
+    document.getElementById('toast-container').appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+  }
+
+  // ── Auth ─────────────────────────────────────────────────────────────────────
+  async function checkAuth() {
+    try {
+      const res = await fetch(`${API}/api/auth/me`, { credentials: 'include' });
+      if (res.ok) {
+        const { user } = await res.json();
+        document.getElementById('navProfile').style.display = 'inline';
+        document.getElementById('navLogin').textContent = user.name.split(' ')[0];
+        document.getElementById('navLogin').href = user.role === 'admin' ? 'admin.html' : 'profile.html';
+        document.getElementById('navLogin').classList.remove('nav-btn');
+      }
+    } catch {}
+  }
+
+  // ── Date Defaults ────────────────────────────────────────────────────────────
+  function setDefaultDates() {
+    const today    = new Date().toISOString().split('T')[0];
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    const s = document.getElementById('crStartDate');
+    const e = document.getElementById('crEndDate');
+    s.min = today; s.value = today;
+    e.min = tomorrow; e.value = tomorrow;
+  }
+
+  // ── Hamburger ────────────────────────────────────────────────────────────────
+    // Sticky header shadow
+  window.addEventListener('scroll', () => { document.querySelector('.site-header')?.classList.toggle('scrolled', window.scrollY > 10); });
+  document.getElementById('hamburger').addEventListener('click', () =>
+    document.getElementById('siteNav').classList.toggle('open'));
+
+  // ── Init from URL param ──────────────────────────────────────────────────────
+  function init() {
+    buildCityPills();
+    setDefaultDates();
+    checkAuth();
+    updateHint();
+    updateCTABtn();
+
+    // Pre-select city from URL ?city=Lucknow
+    const urlCity = new URLSearchParams(window.location.search).get('city');
+    if (urlCity) {
+      const match = CITIES.find(c => c.name.toLowerCase() === urlCity.toLowerCase());
+      if (match) selectCity(match.name);
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>

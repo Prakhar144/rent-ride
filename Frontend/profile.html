@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>My Profile — RideIndia</title>
-<meta name="description" content="View your RideIndia profile and booking history." />
+<title>My Profile — RENT RIDE</title>
+<meta name="description" content="View your RENT RIDE profile and booking history." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="stylesheet" href="assets/style.css" />
 <!-- Razorpay Checkout SDK -->
@@ -12,29 +12,30 @@
 <style>
   /* ── Layout ── */
   .profile-layout { display:grid; grid-template-columns:280px 1fr; gap:28px; padding:40px 6%; max-width:1200px; margin:0 auto; align-items:start; }
-  .profile-card { background:#fff; border-radius:16px; border:1px solid #e5e7eb; padding:28px; text-align:center; position:sticky; top:88px; }
-  .avatar { width:80px; height:80px; border-radius:50%; background:linear-gradient(135deg,#ff6a3d,#e2531f); display:flex; align-items:center; justify-content:center; font-size:2rem; font-weight:800; color:#fff; margin:0 auto 14px; }
+  .profile-card { background:#fff; border-radius:var(--radius); border:1px solid var(--gray-light); padding:28px; text-align:center; position:sticky; top:88px; box-shadow:var(--shadow-sm); }
+  .avatar { width:80px; height:80px; border-radius:50%; background:linear-gradient(135deg,var(--primary),var(--primary-dark)); display:flex; align-items:center; justify-content:center; font-size:2rem; font-weight:800; color:#fff; margin:0 auto 14px; box-shadow:var(--shadow-md); }
   .profile-name { font-size:1.2rem; font-weight:800; margin-bottom:4px; }
-  .profile-email { color:#6b7280; font-size:0.85rem; margin-bottom:6px; }
-  .profile-since { font-size:0.78rem; color:#9ca3af; margin-bottom:20px; }
+  .profile-email { color:var(--gray); font-size:0.85rem; margin-bottom:6px; }
+  .profile-since { font-size:0.78rem; color:var(--gray); margin-bottom:20px; }
   .profile-stat-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
-  .profile-stat { background:#f7f8fa; border-radius:10px; padding:12px 8px; text-align:center; }
-  .profile-stat .n { font-size:1.4rem; font-weight:800; color:#14213d; }
-  .profile-stat .l { font-size:0.72rem; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; }
+  .profile-stat { background:var(--gray-50); border-radius:var(--radius-sm); padding:12px 8px; text-align:center; border:1px solid var(--gray-light); }
+  .profile-stat .n { font-size:1.4rem; font-weight:900; color:var(--dark2); }
+  .profile-stat .l { font-size:0.72rem; color:var(--gray); text-transform:uppercase; letter-spacing:0.5px; font-weight:700; }
 
   /* ── Booking Cards ── */
   .bookings-section h2 { font-size:1.3rem; font-weight:800; margin-bottom:20px; }
   .booking-card {
-    background:#fff; border:1.5px solid #e5e7eb; border-radius:14px;
-    padding:18px 20px; margin-bottom:14px;
+    background:#fff; border:1px solid var(--gray-light); border-radius:var(--radius);
+    padding:20px; margin-bottom:16px;
     display:flex; gap:16px; align-items:flex-start;
-    transition:box-shadow .2s, border-color .2s, transform .15s;
+    transition:box-shadow var(--transition), border-color var(--transition), transform var(--transition);
     position:relative;
+    box-shadow:var(--shadow-xs);
   }
   .booking-card.clickable { cursor:pointer; }
-  .booking-card.clickable:hover { box-shadow:0 6px 20px rgba(0,0,0,0.1); transform:translateY(-1px); }
+  .booking-card.clickable:hover { box-shadow:var(--shadow-md); transform:translateY(-2px); border-color:rgba(255,106,61,0.2); }
   .booking-card.awaiting { border-color:#a78bfa; border-style:solid; }
-  .booking-card.awaiting:hover { border-color:#7c3aed; box-shadow:0 6px 20px rgba(124,58,237,0.15); }
+  .booking-card.awaiting:hover { border-color:#7c3aed; box-shadow:0 8px 24px rgba(124,58,237,0.15); }
   .pay-pulse {
     position:absolute; top:14px; right:16px;
     background:linear-gradient(135deg,#7c3aed,#5b21b6);
@@ -113,7 +114,7 @@
 <body>
 
 <header class="site-header">
-  <div class="logo"><a href="index.html">Ride<span>India</span> 🚗</a></div>
+  <div class="logo"><a href="index.html">RENT<span>RIDE</span> 🚗</a></div>
   <nav class="site-nav" id="siteNav">
     <a href="index.html">Home</a>
     <a href="vehicles.html">Vehicles</a>
@@ -220,7 +221,7 @@
 </div>
 
 <footer class="site-footer" style="margin-top:40px;">
-  <div class="footer-bottom"><p><strong>RideIndia</strong> — © 2026 All rights reserved.</p></div>
+  <div class="footer-bottom"><p><strong>RENT RIDE</strong> — © 2026 All rights reserved.</p></div>
 </footer>
 <div id="toast-container"></div>
 
@@ -386,7 +387,7 @@
         key:         data.key,
         amount:      data.amount,
         currency:    data.currency,
-        name:        'RideIndia',
+        name:        'RENT RIDE',
         description: `${data.vehicle.name} — ${data.days} day${data.days>1?'s':''}`,
         order_id:    data.order_id,
         prefill: {
@@ -482,6 +483,8 @@
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') closePayModal(null);
   });
+    // Sticky header shadow
+  window.addEventListener('scroll', () => { document.querySelector('.site-header')?.classList.toggle('scrolled', window.scrollY > 10); });
   document.getElementById('hamburger').addEventListener('click',()=>
     document.getElementById('siteNav').classList.toggle('open'));
 

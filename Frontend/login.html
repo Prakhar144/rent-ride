@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Sign In / Register — RideIndia</title>
-<meta name="description" content="Sign in or create a RideIndia account to book cars, bikes, and scooters across India." />
+<title>Sign In / Register — RENT RIDE</title>
+<meta name="description" content="Sign in or create a RENT RIDE account to book cars, bikes, and scooters across India." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="stylesheet" href="assets/style.css" />
 <style>
@@ -29,7 +29,7 @@
 <body>
 
 <header class="site-header">
-  <div class="logo"><a href="index.html">Ride<span>India</span> 🚗</a></div>
+  <div class="logo"><a href="index.html">RENT<span>RIDE</span> 🚗</a></div>
   <nav class="site-nav" id="siteNav">
     <a href="index.html">Home</a>
     <a href="vehicles.html">Vehicles</a>
@@ -41,8 +41,8 @@
 <div class="auth-container">
   <div class="auth-card">
     <div class="auth-logo">
-      <div class="logo">Ride<span style="color:#14213d">India</span> 🚗</div>
-      <p>Your self-drive adventure starts here</p>
+      <div class="logo">RENT<span>RIDE</span> 🚗</div>
+      <p>Sign in or create an account to start your journey.</p>
     </div>
 
     <div class="tab-row">
@@ -159,7 +159,7 @@
   }
 
   async function adminDemo() {
-    document.getElementById('loginEmail').value = 'admin@rideindia.com';
+    document.getElementById('loginEmail').value = 'admin@rentride.com';
     document.getElementById('loginPassword').value = 'admin123';
     doLogin();
   }
@@ -169,6 +169,8 @@
 
   function showToast(msg,type='') { const t=document.createElement('div'); t.className=`toast${type?' toast-'+type:''}`; t.textContent=msg; document.getElementById('toast-container').appendChild(t); setTimeout(()=>t.remove(),3000); }
 
+    // Sticky header shadow
+  window.addEventListener('scroll', () => { document.querySelector('.site-header')?.classList.toggle('scrolled', window.scrollY > 10); });
   document.getElementById('hamburger').addEventListener('click',()=>document.getElementById('siteNav').classList.toggle('open'));
 </script>
 </body>

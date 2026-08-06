@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Admin Panel — RideIndia</title>
-<meta name="description" content="RideIndia admin dashboard for managing vehicles, bookings and users." />
+<title>Admin Panel — RENT RIDE</title>
+<meta name="description" content="RENT RIDE admin dashboard for managing vehicles, bookings and users." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="stylesheet" href="assets/style.css" />
 <style>
@@ -20,16 +20,17 @@
   .admin-page.active { display: block; }
   .page-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 6px; }
   .page-sub { color: #6b7280; font-size: 0.9rem; margin-bottom: 28px; }
-  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 18px; margin-bottom: 32px; }
-  .stat-card { background: #fff; border-radius: 14px; padding: 22px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-top: 3px solid var(--primary); }
-  .stat-card.green  { border-top-color: #16a34a; }
-  .stat-card.blue   { border-top-color: #2563eb; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 24px; margin-bottom: 36px; }
+  .stat-card { background: #fff; border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow-sm); border-top: 4px solid var(--primary); transition: transform var(--transition), box-shadow var(--transition); }
+  .stat-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+  .stat-card.green  { border-top-color: var(--success); }
+  .stat-card.blue   { border-top-color: var(--info); }
   .stat-card.purple { border-top-color: #7c3aed; }
-  .stat-card.yellow { border-top-color: #d97706; }
-  .stat-card .icon  { font-size: 1.8rem; margin-bottom: 10px; }
-  .stat-card .value { font-size: 1.9rem; font-weight: 900; color: #14213d; line-height: 1; margin-bottom: 4px; }
-  .stat-card .label { font-size: 0.78rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
-  .section-card { background: #fff; border-radius: 14px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 24px; }
+  .stat-card.yellow { border-top-color: var(--warning); }
+  .stat-card .icon  { font-size: 2rem; margin-bottom: 12px; }
+  .stat-card .value { font-size: 2.2rem; font-weight: 900; color: var(--dark2); line-height: 1; margin-bottom: 6px; letter-spacing: -0.5px; }
+  .stat-card .label { font-size: 0.8rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px; }
+  .section-card { background: #fff; border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow-sm); margin-bottom: 24px; border: 1px solid var(--gray-light); }
   .section-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px; }
   .section-card-header h3 { font-size: 1.05rem; font-weight: 800; }
   /* Vehicle form */
@@ -41,7 +42,7 @@
 <body>
 
 <header class="site-header">
-  <div class="logo"><a href="index.html">Ride<span>India</span> 🚗</a></div>
+  <div class="logo"><a href="index.html">RENT<span>RIDE</span> 🚗</a></div>
   <nav class="site-nav" id="siteNav">
     <a href="index.html">Home</a>
     <a href="admin.html" class="active">Admin</a>
@@ -374,6 +375,8 @@
   }
 
   function showToast(msg,type=''){const t=document.createElement('div');t.className=`toast${type?' toast-'+type:''}`;t.textContent=msg;document.getElementById('toast-container').appendChild(t);setTimeout(()=>t.remove(),3500);}
+    // Sticky header shadow
+  window.addEventListener('scroll', () => { document.querySelector('.site-header')?.classList.toggle('scrolled', window.scrollY > 10); });
   document.getElementById('hamburger').addEventListener('click',()=>document.getElementById('siteNav').classList.toggle('open'));
 
   init();
