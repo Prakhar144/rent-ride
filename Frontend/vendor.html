@@ -131,6 +131,7 @@
     } catch { window.location.href='login.html'; return; }
 
     loadVendorVehicles();
+    startDispatchPolling();
   }
 
   function showPage(page) {
@@ -164,7 +165,11 @@
     wrap.innerHTML = `<table>
       <thead><tr><th>#</th><th>Vehicle</th><th>City</th><th>Type</th><th>Price/Day</th><th>Available</th>${showActions?'<th>Actions</th>':''}</tr></thead>
       <tbody>${vehicles.map(v=>{
-        const thumb = v.image_url ? `<img src="${API}${v.image_url}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;vertical-align:middle;margin-right:8px;" />` : `${v.icon}`;
+        let defaultImg = 'assets/images/default-car.png';
+        if (v.type === 'Bike') defaultImg = 'assets/images/default-bike.png';
+        else if (v.type === 'Scooter') defaultImg = 'assets/images/default-scooter.png';
+        const thumbSrc = v.image_url ? `${API}${v.image_url}` : defaultImg;
+        const thumb = `<img src="${thumbSrc}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;vertical-align:middle;margin-right:8px;" />`;
         return `
         <tr>
           <td style="color:#6b7280;">${v.id.slice(-6)}</td>
@@ -265,6 +270,99 @@
   document.getElementById('hamburger').addEventListener('click',()=>document.getElementById('siteNav').classList.toggle('open'));
 
   init();
+  // ── Dispatch Polling Logic ──
+  let activeDispatchId = null;
+  let dispatchPollingInt = null;
+  let ignoredDispatches = new Set();
+
+  function startDispatchPolling() {
+    if (dispatchPollingInt) clearInterval(dispatchPollingInt);
+    dispatchPollingInt = setInterval(pollDispatchRequests, 5000);
+    pollDispatchRequests();
+  }
+
+  async function pollDispatchRequests() {
+    if (activeDispatchId) return;
+    try {
+      const res = await fetch(`${API}/api/bookings/dispatch-requests`, { credentials: 'include' });
+      if (!res.ok) return;
+      const data = await res.json();
+      const newReq = data.requests.find(r => !ignoredDispatches.has(r.id));
+      if (newReq) showDispatchModal(newReq);
+    } catch (e) { console.error('Dispatch polling error', e); }
+  }
+
+  function showDispatchModal(req) {
+    activeDispatchId = req.id;
+    document.getElementById('dmVehicle').textContent = req.vehicle_name;
+    document.getElementById('dmDates').textContent = `${req.start_date} to ${req.end_date}`;
+    document.getElementById('dmLoc').textContent = req.city || 'Your City';
+    document.getElementById('dmEarn').textContent = `₹${req.total_price}`;
+    document.getElementById('dispatchModal').classList.add('active');
+    
+    try {
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+      audio.volume = 0.5;
+      audio.play().catch(()=>{});
+    } catch(e){}
+  }
+
+  function ignoreDispatchRequest() {
+    if (activeDispatchId) ignoredDispatches.add(activeDispatchId);
+    activeDispatchId = null;
+    document.getElementById('dispatchModal').classList.remove('active');
+  }
+
+  async function acceptDispatchRequest() {
+    if (!activeDispatchId) return;
+    const btn = document.querySelector('.dispatch-btn-accept');
+    const oldText = btn.textContent;
+    btn.textContent = 'Accepting...';
+    btn.disabled = true;
+    
+    try {
+      const res = await fetch(`${API}/api/bookings/${activeDispatchId}/accept`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast('Ride accepted successfully!', 'success');
+        document.getElementById('dispatchModal').classList.remove('active');
+        ignoredDispatches.add(activeDispatchId);
+        activeDispatchId = null;
+      } else {
+        showToast(data.error || 'Failed to accept ride', 'error');
+        ignoreDispatchRequest();
+      }
+    } catch (e) {
+      showToast('Network error', 'error');
+    } finally {
+      btn.textContent = oldText;
+      btn.disabled = false;
+    }
+  }
 </script>
+
+<!-- ── Dispatch Modal ── -->
+<div class="dispatch-modal-overlay" id="dispatchModal">
+  <div class="dispatch-modal">
+    <div class="dispatch-icon">🔔</div>
+    <div class="dispatch-title">New Ride Request!</div>
+    <div class="dispatch-desc">A user in your city is looking for a vehicle.</div>
+    <div class="dispatch-details">
+      <div class="dispatch-detail-row"><span class="dispatch-detail-lbl">Vehicle:</span><span class="dispatch-detail-val" id="dmVehicle"></span></div>
+      <div class="dispatch-detail-row"><span class="dispatch-detail-lbl">Dates:</span><span class="dispatch-detail-val" id="dmDates"></span></div>
+      <div class="dispatch-detail-row"><span class="dispatch-detail-lbl">Location:</span><span class="dispatch-detail-val" id="dmLoc"></span></div>
+      <div class="dispatch-detail-row" style="margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb;">
+        <span class="dispatch-detail-lbl">Est. Earnings:</span><span class="dispatch-detail-val" style="color:#16a34a;" id="dmEarn"></span>
+      </div>
+    </div>
+    <div class="dispatch-actions">
+      <button class="dispatch-btn-ignore" onclick="ignoreDispatchRequest()">Ignore</button>
+      <button class="dispatch-btn-accept" onclick="acceptDispatchRequest()">Accept Ride</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

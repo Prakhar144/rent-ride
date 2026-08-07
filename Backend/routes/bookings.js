@@ -52,6 +52,40 @@ router.post('/', requireAuth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ─── GET /api/bookings/dispatch-requests ──────────────────────────────────────
+router.get('/dispatch-requests', requireAuth, async (req, res) => {
+  if (req.user.role !== 'vendor') return res.status(403).json({ error: 'Only vendors can view dispatch requests' });
+  try {
+    const bookings = await Booking.find({ status: 'pending_dispatch' })
+      .populate('vehicle', 'name icon city type price_day image_url')
+      .sort({ createdAt: -1 });
+    res.json({ requests: bookings.map(flattenBooking) });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── POST /api/bookings/:id/accept ──────────────────────────────────────────
+router.post('/:id/accept', requireAuth, async (req, res) => {
+  if (req.user.role !== 'vendor') return res.status(403).json({ error: 'Only vendors can accept requests' });
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (booking.status !== 'pending_dispatch') return res.status(400).json({ error: 'Booking already accepted or cancelled' });
+    
+    booking.status = 'awaiting_payment';
+    booking.assigned_vendor = req.user.id;
+    await booking.save();
+    
+    await ActivityLog.create({
+      user: req.user.id,
+      action: 'Accepted Ride',
+      details: `Accepted dispatch request for booking ID: ${booking._id}`
+    });
+    
+    await booking.populate('vehicle', 'name icon city type price_day image_url');
+    res.json({ message: 'Ride accepted successfully', booking: flattenBooking(booking) });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ─── GET /api/bookings/mine ───────────────────────────────────────────────────
 router.get('/mine', requireAuth, async (req, res) => {
   try {
@@ -104,6 +138,7 @@ function flattenBooking(b) {
     pickup_address: obj.pickup_address || null,
     drop_address:   obj.drop_address   || null,
     distance_km:    obj.distance_km    || null,
+    assigned_vendor:obj.assigned_vendor|| null,
     created_at:     obj.createdAt,
   };
 }

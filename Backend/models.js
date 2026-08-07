@@ -35,9 +35,10 @@ const bookingSchema = new mongoose.Schema({
   total_price:         { type: Number, required: true },
   status: {
     type: String,
-    enum: ['awaiting_payment', 'pending', 'confirmed', 'cancelled'],
-    default: 'awaiting_payment',
+    enum: ['pending_dispatch', 'awaiting_payment', 'pending', 'confirmed', 'cancelled'],
+    default: 'pending_dispatch',
   },
+  assigned_vendor:     { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   razorpay_order_id:   { type: String, default: null },
   razorpay_payment_id: { type: String, default: null },
   // ── City Ride fields ──────────────────────────────────────────────────────

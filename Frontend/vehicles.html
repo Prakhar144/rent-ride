@@ -568,7 +568,11 @@
       grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">🔍</span><h3>No vehicles found</h3><p>Try adjusting your filters or selecting a different city.</p></div>';
     } else {
       grid.innerHTML = page.map(v => {
-        const thumb = v.image_url ? `<img src="${API}${v.image_url}" style="width:100%;height:140px;object-fit:cover;border-radius:12px 12px 0 0;" />` : `<div style="font-size:3rem;text-align:center;padding:20px 0;">${v.icon}</div>`;
+        let defaultImg = 'assets/images/default-car.png';
+        if (v.type === 'Bike') defaultImg = 'assets/images/default-bike.png';
+        else if (v.type === 'Scooter') defaultImg = 'assets/images/default-scooter.png';
+        const thumbSrc = v.image_url ? `${API}${v.image_url}` : defaultImg;
+        const thumb = `<img src="${thumbSrc}" style="width:100%;height:140px;object-fit:cover;border-radius:12px 12px 0 0;" />`;
         return `
         <div class="vehicle-card">
           <div class="vehicle-thumb" style="padding:0;overflow:hidden;background:#f7f8fa;">

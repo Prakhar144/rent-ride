@@ -287,7 +287,11 @@
     wrap.innerHTML = `<table>
       <thead><tr><th>#</th><th>Vehicle</th><th>City</th><th>Type</th><th>Price/Day</th><th>Fuel</th><th>Available</th><th>Actions</th></tr></thead>
       <tbody>${allAdminVehicles.map(v=>{
-        const thumb = v.image_url ? `<img src="${API}${v.image_url}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;vertical-align:middle;margin-right:8px;" />` : `${v.icon}`;
+        let defaultImg = 'assets/images/default-car.png';
+        if (v.type === 'Bike') defaultImg = 'assets/images/default-bike.png';
+        else if (v.type === 'Scooter') defaultImg = 'assets/images/default-scooter.png';
+        const thumbSrc = v.image_url ? `${API}${v.image_url}` : defaultImg;
+        const thumb = `<img src="${thumbSrc}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;vertical-align:middle;margin-right:8px;" />`;
         return `
         <tr>
           <td style="color:#6b7280;">${v.id}</td>
